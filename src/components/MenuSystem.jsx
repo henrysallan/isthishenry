@@ -10,6 +10,7 @@ function MenuItem({ text, position, onClick, isActive, fontSize = 0.5, color = '
   const meshRef = useRef();
   const groupRef = useRef();
   const [hovered, setHovered] = useState(false);
+  const setHoveringMenuItem = useNavigationStore(state => state.setHoveringMenuItem);
 
   // Initial setup for animation
   useEffect(() => {
@@ -65,8 +66,18 @@ function MenuItem({ text, position, onClick, isActive, fontSize = 0.5, color = '
 
   useEffect(() => {
     if (meshRef.current && !animateIn) {
+      // Determine target opacity based on active and hover states
+      let targetOpacity;
+      if (isActive) {
+        targetOpacity = 1; // Active items stay at full opacity
+      } else if (hovered) {
+        targetOpacity = 1; // Hovered items go to full opacity
+      } else {
+        targetOpacity = 0.5; // Non-active, non-hovered items are dimmed
+      }
+      
       gsap.to(meshRef.current.material, {
-        opacity: isActive ? 1 : (hovered ? 0.9 : 0.7),
+        opacity: targetOpacity,
         duration: 0.3
       });
     }
@@ -74,7 +85,8 @@ function MenuItem({ text, position, onClick, isActive, fontSize = 0.5, color = '
 
   useEffect(() => {
     document.body.style.cursor = hovered ? 'pointer' : 'auto';
-  }, [hovered]);
+    setHoveringMenuItem(hovered); // Update global hover state
+  }, [hovered, setHoveringMenuItem]);
 
   return (
     <group 
@@ -203,8 +215,8 @@ function MenuSystem() {
           text={item.title}
           position={item.position}
           onClick={() => handleMainMenuClick(item)}
-          isActive={item.isActive}
-          color={theme.colors.textLight}
+          isActive={item.isActive || (currentMenu === item.id)}
+          color={theme.colors.text}
           fontSize={0.15}
           animateIn={false}
         />

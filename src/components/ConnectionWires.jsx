@@ -26,7 +26,7 @@ function AnimatedLine({ points, color, lineWidth, delay = 0, visible = true }) {
       const obj = { progress: 0 };
       animationRef.current = gsap.to(obj, {
         progress: 1,
-        duration: 1.5,
+        duration: 0.8,
         ease: 'power2.out',
         delay: delay,
         onUpdate: () => {
@@ -58,7 +58,7 @@ function AnimatedLine({ points, color, lineWidth, delay = 0, visible = true }) {
       const obj = { progress: 1 };
       animationRef.current = gsap.to(obj, {
         progress: 0,
-        duration: 1.5,
+        duration: 0.8,
         ease: 'power2.out',
         onUpdate: () => {
           const totalPoints = points.length;
@@ -156,7 +156,7 @@ function ConnectionWires() {
       setShowWorkWire(true);
     } else if (currentMenu !== 'work' && previousMenuRef.current === 'work') {
       // Keep showing but mark as not visible for animation
-      setTimeout(() => setShowWorkWire(false), 1500); // Wait for animation to complete
+      setTimeout(() => setShowWorkWire(false), 800); // Wait for animation to complete
     }
     previousMenuRef.current = currentMenu;
   }, [currentMenu]);
@@ -172,14 +172,14 @@ function ConnectionWires() {
     } else if (!shouldShow && previousViewRef.current) {
       // Navigating away from page to home or menu
       setIsPageWireVisible(false);
-      setTimeout(() => setDisplayedPageWireItem(null), 1500); // Wait for animation to complete
+      setTimeout(() => setDisplayedPageWireItem(null), 800); // Wait for animation to complete
     } else if (shouldShow && activeMenuItem !== previousActiveItemRef.current && previousActiveItemRef.current) {
       // Switching between pages - animate out old, then animate in new
       setIsPageWireVisible(false);
       setTimeout(() => {
         setDisplayedPageWireItem(activeMenuItem);
         setIsPageWireVisible(true);
-      }, 1500); // Wait for old wire to animate out
+      }, 800); // Wait for old wire to animate out
     }
     
     previousViewRef.current = currentView;
@@ -261,7 +261,7 @@ function ConnectionWires() {
         <Line
           points={homeToMainWire}
           color={theme.colors.wire}
-          lineWidth={1}
+          lineWidth={0.5}
         />
       )}
 
@@ -270,7 +270,7 @@ function ConnectionWires() {
         <AnimatedLine
           points={workToSubmenuWire}
           color={theme.colors.wire}
-          lineWidth={1}
+          lineWidth={0.5}
           delay={currentMenu === 'work' ? 0.5 : 0}
           visible={currentMenu === 'work'}
         />
@@ -281,7 +281,7 @@ function ConnectionWires() {
         <AnimatedLine
           points={menuToPageWire}
           color={theme.colors.wire}
-          lineWidth={1}
+          lineWidth={0.5}
           delay={isPageWireVisible ? 0.3 : 0}
           visible={isPageWireVisible}
         />

@@ -1,0 +1,26 @@
+.landing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  cursor: pointer;
+}
+
+.landing-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cutout-rectangle {
+  /* No transitions - handled by JS lerp */
+}
+
+.rectangle-stroke {
+  pointer-events: all;
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  /* stroke-dasharray updated dynamically in JS based on perimeter */
+  /* No transitions - handled by JS lerp */
+}

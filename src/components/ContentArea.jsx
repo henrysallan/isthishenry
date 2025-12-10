@@ -38,8 +38,8 @@ function ContentArea() {
     if (previousViewRef.current !== currentView && contentInnerRef.current && displayContent) {
       gsap.to(contentInnerRef.current, {
         opacity: 0,
-        y: -20,
-        duration: theme.animation.duration * 0.5,
+        filter: 'blur(5px)',
+        duration: theme.animation.duration * 0.1,
         ease: theme.animation.ease,
         onComplete: () => {
           setContent(newContent);
@@ -59,10 +59,10 @@ function ContentArea() {
       // Animate content in
       gsap.fromTo(
         contentInnerRef.current,
-        { opacity: 0, y: 20 },
+        { opacity: 0, filter: 'blur(5px)' },
         { 
-          opacity: 1, 
-          y: 0, 
+          opacity: 1,
+          filter: 'blur(0px)',
           duration: theme.animation.duration,
           ease: theme.animation.ease 
         }
@@ -76,13 +76,8 @@ function ContentArea() {
         <div className="content-inner" ref={contentInnerRef}>
           {currentView === 'home' ? (
             <div className="home-content">
-              <div className="home-section-1">
-                <h1>{displayContent.name}</h1>
-                <p className="subtitle">{displayContent.subtitle}</p>
-              </div>
-              <div className="home-section-2">
-                <p className="info-text">{displayContent.current}</p>
-                <p className="info-text">{displayContent.past}</p>
+              <div className="video-container full-bleed">
+                <R2Video videoKey="home-reel.mp4" />
               </div>
             </div>
           ) : (

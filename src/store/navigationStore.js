@@ -6,6 +6,7 @@ export const useNavigationStore = create((set) => ({
   currentMenu: 'main', // 'main' or 'work'
   activeMenuItem: 'home',
   parentMenu: null,
+  isHoveringMenuItem: false, // Track if hovering over any menu item
   
   // Navigation actions
   navigateToHome: () => set({
@@ -32,5 +33,9 @@ export const useNavigationStore = create((set) => ({
     parentMenu: null,
     activeMenuItem: null,
     currentView: null
+  }),
+  
+  setHoveringMenuItem: (isHovering) => set({
+    isHoveringMenuItem: isHovering
   })
 }));

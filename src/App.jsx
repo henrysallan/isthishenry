@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import PortfolioScene from './components/PortfolioScene';
 import ContentArea from './components/ContentArea';
+import CustomCursor from './components/CustomCursor';
+import LandingOverlay from './components/LandingOverlay';
+import HomeTextOverlay from './components/HomeTextOverlay';
 import './App.css';
 
 function App() {
+  const [showOverlay, setShowOverlay] = useState(true);
+
   return (
     <div className="App">
       <Canvas
@@ -19,6 +25,11 @@ function App() {
         <PortfolioScene />
       </Canvas>
       <ContentArea />
+      <HomeTextOverlay />
+      <CustomCursor />
+      {showOverlay && (
+        <LandingOverlay onComplete={() => setShowOverlay(false)} />
+      )}
     </div>
   );
 }

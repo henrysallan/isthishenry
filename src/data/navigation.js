@@ -6,9 +6,9 @@ export const navigationData = {
     title: 'Home',
     content: {
       name: 'Henry Allan',
-      subtitle: 'motion, brand, generative design',
+      subtitle: 'motion, brand, generative design\n3d, creative coding',
       current: 'current:\nthe collected works',
-      past: 'past:\n\nvmgroupe\nkalshi\nmschf'
+      past: 'past:\nvmgroupe\nkalshi\nmschf'
     }
   },
   mainMenu: [

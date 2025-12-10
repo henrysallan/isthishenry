@@ -12,7 +12,7 @@ export const theme = {
     leftColumnRatio: 3 / 7,
     rightColumnRatio: 4 / 7,
     contentPadding: 10,
-    contentBorderRadius: 14,
+    contentBorderRadius: 1.0,
     borderWidth: 1
   },
   typography: {
