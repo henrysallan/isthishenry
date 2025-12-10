@@ -1,16 +1,111 @@
-# React + Vite
+# isthishenry Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern portfolio website built with React, Vite, and Three.js.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React** - UI framework
+- **Vite** - Build tool and dev server
+- **React Three Fiber** - Three.js renderer for React
+- **@react-three/drei** - Helper components for R3F
+- **Firebase** - Hosting (configured for future deployment)
+- **Cloudflare R2** - Video streaming storage
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerequisites
 
-## Expanding the ESLint configuration
+- Node.js (v18 or higher)
+- npm
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/henrysallan/isthishenry.git
+cd isthishenry
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create a `.env` file based on `.env.example`:
+```bash
+cp .env.example .env
+```
+
+4. Fill in your environment variables in `.env`
+
+### Development
+
+Run the development server:
+```bash
+npm run dev
+```
+
+The site will be available at `http://localhost:5173`
+
+### Build
+
+Build for production:
+```bash
+npm run build
+```
+
+Preview the production build:
+```bash
+npm run preview
+```
+
+## Firebase Deployment
+
+To deploy to Firebase Hosting:
+
+1. Login to Firebase:
+```bash
+firebase login
+```
+
+2. Initialize Firebase (if not already done):
+```bash
+firebase init hosting
+```
+
+3. Build and deploy:
+```bash
+npm run build
+firebase deploy
+```
+
+## Cloudflare R2 Setup
+
+Cloudflare R2 is configured for video streaming. You'll need to:
+
+1. Create an R2 bucket in your Cloudflare dashboard
+2. Generate API credentials
+3. Set up a public domain for your bucket
+4. Add the credentials to your `.env` file
+
+## Project Structure
+
+```
+├── src/
+│   ├── components/     # React components
+│   │   └── Scene.jsx   # Three.js scene component
+│   ├── config/         # Configuration files
+│   │   ├── firebase.js # Firebase setup
+│   │   └── r2.js       # Cloudflare R2 setup
+│   ├── utils/          # Utility functions
+│   │   └── videoStreaming.jsx # R2 video helpers
+│   ├── App.jsx         # Main app component
+│   └── main.jsx        # Entry point
+├── public/             # Static assets
+├── firebase.json       # Firebase hosting config
+└── .env.example        # Environment variables template
+```
+
+## License
+
+MIT
