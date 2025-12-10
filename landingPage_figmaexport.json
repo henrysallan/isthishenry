@@ -1,0 +1,640 @@
+{
+  "$comment": "This is structural design data exported by the Figma Raw plugin. It is formatted to help LLMs (Large Language Models) understand design structures and components from Figma designs.",
+  "name": "landing Page",
+  "type": "FRAME",
+  "width": 1728,
+  "height": 1117,
+  "layoutMode": "NONE",
+  "primaryAxisSizingMode": "AUTO",
+  "counterAxisSizingMode": "FIXED",
+  "primaryAxisAlignItems": "MIN",
+  "counterAxisAlignItems": "MIN",
+  "fills": [
+    {
+      "type": "SOLID",
+      "opacity": 1,
+      "color": {
+        "r": 0.9518855214118958,
+        "g": 0.9518855214118958,
+        "b": 0.9518855214118958,
+        "a": 1,
+        "hex": "#f3f3f3"
+      }
+    }
+  ],
+  "strokeWeight": 1,
+  "strokeAlign": "INSIDE",
+  "strokeCap": "NONE",
+  "strokeJoin": "MITER",
+  "children": [
+    {
+      "name": "Main Menu List",
+      "type": "FRAME",
+      "width": 185,
+      "height": 127,
+      "layoutMode": "VERTICAL",
+      "primaryAxisSizingMode": "AUTO",
+      "counterAxisSizingMode": "AUTO",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "paddingLeft": 10,
+      "paddingRight": 10,
+      "paddingTop": 10,
+      "paddingBottom": 10,
+      "itemSpacing": 17,
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "children": [
+        {
+          "name": "Work",
+          "type": "TEXT",
+          "width": 165,
+          "height": 14,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.6961575746536255,
+                "g": 0.6961575746536255,
+                "b": 0.6961575746536255,
+                "a": 1,
+                "hex": "#b2b2b2"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Work",
+          "fontSize": 20,
+          "fontName": {
+            "family": "IBM Plex Mono",
+            "style": "Regular"
+          },
+          "fontWeight": 400,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "About",
+          "type": "TEXT",
+          "width": 165,
+          "height": 14,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.6961575746536255,
+                "g": 0.6961575746536255,
+                "b": 0.6961575746536255,
+                "a": 1,
+                "hex": "#b2b2b2"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "About",
+          "fontSize": 20,
+          "fontName": {
+            "family": "IBM Plex Mono",
+            "style": "Regular"
+          },
+          "fontWeight": 400,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "Contact",
+          "type": "TEXT",
+          "width": 165,
+          "height": 14,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.6961575746536255,
+                "g": 0.6961575746536255,
+                "b": 0.6961575746536255,
+                "a": 1,
+                "hex": "#b2b2b2"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Contact",
+          "fontSize": 20,
+          "fontName": {
+            "family": "IBM Plex Mono",
+            "style": "Regular"
+          },
+          "fontWeight": 400,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        },
+        {
+          "name": "Projects",
+          "type": "TEXT",
+          "width": 165,
+          "height": 14,
+          "fills": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.6961575746536255,
+                "g": 0.6961575746536255,
+                "b": 0.6961575746536255,
+                "a": 1,
+                "hex": "#b2b2b2"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "OUTSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "characters": "Projects",
+          "fontSize": 20,
+          "fontName": {
+            "family": "IBM Plex Mono",
+            "style": "Regular"
+          },
+          "fontWeight": 400,
+          "letterSpacing": {
+            "unit": "PERCENT",
+            "value": 0
+          },
+          "lineHeight": {
+            "unit": "AUTO"
+          },
+          "textAlignHorizontal": "LEFT",
+          "textAlignVertical": "TOP",
+          "textAutoResize": "HEIGHT",
+          "textCase": "ORIGINAL",
+          "textDecoration": "NONE"
+        }
+      ]
+    },
+    {
+      "name": "Main Viewer",
+      "type": "FRAME",
+      "width": 970,
+      "height": 1086,
+      "cornerRadius": 14,
+      "layoutMode": "NONE",
+      "primaryAxisSizingMode": "AUTO",
+      "counterAxisSizingMode": "FIXED",
+      "primaryAxisAlignItems": "MIN",
+      "counterAxisAlignItems": "MIN",
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.9743089079856873,
+            "g": 0.9743089079856873,
+            "b": 0.9743089079856873,
+            "a": 1,
+            "hex": "#f8f8f8"
+          }
+        }
+      ],
+      "strokes": [
+        {
+          "type": "SOLID",
+          "opacity": 0.4000000059604645,
+          "color": {
+            "r": 0.4000000059604645,
+            "g": 0.4000000059604645,
+            "b": 0.4000000059604645,
+            "a": 0.4000000059604645,
+            "hex": "#66666666"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "INSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "children": [
+        {
+          "name": "Home profile div",
+          "type": "FRAME",
+          "width": 307,
+          "height": 261,
+          "layoutMode": "VERTICAL",
+          "primaryAxisSizingMode": "FIXED",
+          "counterAxisSizingMode": "FIXED",
+          "primaryAxisAlignItems": "MIN",
+          "counterAxisAlignItems": "MIN",
+          "itemSpacing": 46,
+          "strokeWeight": 1,
+          "strokeAlign": "INSIDE",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER",
+          "children": [
+            {
+              "name": "Sec 1",
+              "type": "FRAME",
+              "width": 307,
+              "height": 35,
+              "layoutMode": "VERTICAL",
+              "primaryAxisSizingMode": "AUTO",
+              "counterAxisSizingMode": "FIXED",
+              "primaryAxisAlignItems": "MIN",
+              "counterAxisAlignItems": "MIN",
+              "itemSpacing": 7,
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "children": [
+                {
+                  "name": "Henry Allan",
+                  "type": "TEXT",
+                  "width": 213,
+                  "height": 17,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1,
+                        "hex": "#000000"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "OUTSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "characters": "Henry Allan",
+                  "fontSize": 24,
+                  "fontName": {
+                    "family": "IBM Plex Mono",
+                    "style": "Regular"
+                  },
+                  "fontWeight": 400,
+                  "letterSpacing": {
+                    "unit": "PERCENT",
+                    "value": 0
+                  },
+                  "lineHeight": {
+                    "unit": "AUTO"
+                  },
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "textAutoResize": "HEIGHT",
+                  "textCase": "ORIGINAL",
+                  "textDecoration": "NONE"
+                },
+                {
+                  "name": "motion, brand, generative design",
+                  "type": "TEXT",
+                  "width": 307,
+                  "height": 11,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1,
+                        "hex": "#000000"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "OUTSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "characters": "motion, brand, generative design",
+                  "fontSize": 16,
+                  "fontName": {
+                    "family": "IBM Plex Mono",
+                    "style": "Regular"
+                  },
+                  "fontWeight": 400,
+                  "letterSpacing": {
+                    "unit": "PERCENT",
+                    "value": 0
+                  },
+                  "lineHeight": {
+                    "unit": "PERCENT",
+                    "value": 72.00000286102295
+                  },
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "textAutoResize": "HEIGHT",
+                  "textCase": "ORIGINAL",
+                  "textDecoration": "NONE"
+                }
+              ]
+            },
+            {
+              "name": "Sec 2",
+              "type": "FRAME",
+              "width": 128,
+              "height": 148,
+              "layoutMode": "VERTICAL",
+              "primaryAxisSizingMode": "AUTO",
+              "counterAxisSizingMode": "AUTO",
+              "primaryAxisAlignItems": "MIN",
+              "counterAxisAlignItems": "MIN",
+              "itemSpacing": 15,
+              "strokeWeight": 1,
+              "strokeAlign": "INSIDE",
+              "strokeCap": "NONE",
+              "strokeJoin": "MITER",
+              "children": [
+                {
+                  "name": "current: the collected works",
+                  "type": "TEXT",
+                  "width": 128,
+                  "height": 59,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1,
+                        "hex": "#000000"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "OUTSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "characters": "current:\nthe collected works",
+                  "fontSize": 16,
+                  "fontName": {
+                    "family": "IBM Plex Mono",
+                    "style": "Regular"
+                  },
+                  "fontWeight": 400,
+                  "letterSpacing": {
+                    "unit": "PERCENT",
+                    "value": 0
+                  },
+                  "lineHeight": {
+                    "unit": "PERCENT",
+                    "value": 102.99999713897705
+                  },
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "textAutoResize": "HEIGHT",
+                  "textCase": "ORIGINAL",
+                  "textDecoration": "NONE"
+                },
+                {
+                  "name": "past: vmgroupe kalshi mschf",
+                  "type": "TEXT",
+                  "width": 128,
+                  "height": 74,
+                  "fills": [
+                    {
+                      "type": "SOLID",
+                      "opacity": 1,
+                      "color": {
+                        "r": 0,
+                        "g": 0,
+                        "b": 0,
+                        "a": 1,
+                        "hex": "#000000"
+                      }
+                    }
+                  ],
+                  "strokeWeight": 1,
+                  "strokeAlign": "OUTSIDE",
+                  "strokeCap": "NONE",
+                  "strokeJoin": "MITER",
+                  "characters": "past:\n\nvmgroupe\nkalshi\nmschf",
+                  "fontSize": 16,
+                  "fontName": {
+                    "family": "IBM Plex Mono",
+                    "style": "Regular"
+                  },
+                  "fontWeight": 400,
+                  "letterSpacing": {
+                    "unit": "PERCENT",
+                    "value": 0
+                  },
+                  "lineHeight": "Symbol(figma.mixed)",
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "TOP",
+                  "textAutoResize": "HEIGHT",
+                  "textCase": "ORIGINAL",
+                  "textDecoration": "NONE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Home",
+      "type": "TEXT",
+      "width": 74,
+      "height": 21,
+      "fills": [
+        {
+          "type": "SOLID",
+          "opacity": 1,
+          "color": {
+            "r": 0.3992074728012085,
+            "g": 0.3992074728012085,
+            "b": 0.3992074728012085,
+            "a": 1,
+            "hex": "#666666"
+          }
+        }
+      ],
+      "strokeWeight": 1,
+      "strokeAlign": "OUTSIDE",
+      "strokeCap": "NONE",
+      "strokeJoin": "MITER",
+      "characters": "Home",
+      "fontSize": 24,
+      "fontName": {
+        "family": "IBM Plex Mono",
+        "style": "Regular"
+      },
+      "fontWeight": 400,
+      "letterSpacing": {
+        "unit": "PERCENT",
+        "value": 0
+      },
+      "lineHeight": {
+        "unit": "AUTO"
+      },
+      "textAlignHorizontal": "LEFT",
+      "textAlignVertical": "TOP",
+      "textAutoResize": "NONE",
+      "textCase": "ORIGINAL",
+      "textDecoration": "NONE"
+    },
+    {
+      "name": "Home relation lines",
+      "type": "GROUP",
+      "width": 184,
+      "height": 78,
+      "children": [
+        {
+          "name": "Line 2",
+          "type": "LINE",
+          "width": 184,
+          "height": 0,
+          "strokes": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.3992074728012085,
+                "g": 0.3992074728012085,
+                "b": 0.3992074728012085,
+                "a": 1,
+                "hex": "#666666"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "CENTER",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        },
+        {
+          "name": "Line 3",
+          "type": "LINE",
+          "width": 78,
+          "height": 0,
+          "rotation": -90.00000590724127,
+          "strokes": [
+            {
+              "type": "SOLID",
+              "opacity": 1,
+              "color": {
+                "r": 0.3992074728012085,
+                "g": 0.3992074728012085,
+                "b": 0.3992074728012085,
+                "a": 1,
+                "hex": "#666666"
+              }
+            }
+          ],
+          "strokeWeight": 1,
+          "strokeAlign": "CENTER",
+          "strokeCap": "NONE",
+          "strokeJoin": "MITER"
+        }
+      ]
+    }
+  ],
+  "textContent": [
+    {
+      "name": "Work",
+      "text": "Work",
+      "path": "landing Page/Main Menu List/Work",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "About",
+      "text": "About",
+      "path": "landing Page/Main Menu List/About",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Contact",
+      "text": "Contact",
+      "path": "landing Page/Main Menu List/Contact",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Projects",
+      "text": "Projects",
+      "path": "landing Page/Main Menu List/Projects",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Henry Allan",
+      "text": "Henry Allan",
+      "path": "landing Page/Main Viewer/Home profile div/Sec 1/Henry Allan",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "motion, brand, generative design",
+      "text": "motion, brand, generative design",
+      "path": "landing Page/Main Viewer/Home profile div/Sec 1/motion, brand, generative design",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "current: the collected works",
+      "text": "current:\nthe collected works",
+      "path": "landing Page/Main Viewer/Home profile div/Sec 2/current: the collected works",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "past: vmgroupe kalshi mschf",
+      "text": "past:\n\nvmgroupe\nkalshi\nmschf",
+      "path": "landing Page/Main Viewer/Home profile div/Sec 2/past: vmgroupe kalshi mschf",
+      "nodeType": "TEXT"
+    },
+    {
+      "name": "Home",
+      "text": "Home",
+      "path": "landing Page/Home",
+      "nodeType": "TEXT"
+    }
+  ]
+}
