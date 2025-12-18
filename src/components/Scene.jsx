@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
+import DrawableLine from './DrawableLine'
 
 function Box() {
   return (
@@ -17,6 +18,7 @@ export default function Scene() {
       <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
       <pointLight position={[-10, -10, -10]} />
       <Box />
+      <DrawableLine />
       <OrbitControls />
     </Canvas>
   )

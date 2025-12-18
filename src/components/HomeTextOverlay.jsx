@@ -1,16 +1,21 @@
-import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
+import P5Logo from './P5Logo';
 import './HomeTextOverlay.css';
 
 function HomeTextOverlay() {
   const homeContent = navigationData.home.content;
 
   return (
-    <div className="home-text-overlay">
-      <div className="home-section-1">
-        <h1>{homeContent.name}</h1>
-        <p className="subtitle">{homeContent.subtitle}</p>
-      </div>
+    <>
+      {/* P5 canvas is fullscreen, positioned to match the text location */}
+      <P5Logo text={homeContent.name} fontSize={16} />
+      
+      <div className="home-text-overlay">
+        <div className="home-section-1">
+          {/* Name is rendered by P5Logo canvas */}
+          <div className="name-spacer" />
+          <p className="subtitle">{homeContent.subtitle}</p>
+        </div>
       <div className="home-section-2">
         <p className="info-text">
           current:
@@ -21,7 +26,6 @@ function HomeTextOverlay() {
         </p>
         <p className="info-text">
           past:
-          <br />
           <br />
           <a href="https://vmgroupe.com" target="_blank" rel="noopener noreferrer">
             vmgroupe
@@ -37,6 +41,7 @@ function HomeTextOverlay() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

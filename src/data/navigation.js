@@ -6,7 +6,7 @@ export const navigationData = {
     title: 'Home',
     content: {
       name: 'Henry Allan',
-      subtitle: 'motion, brand, generative design\n3d, creative coding',
+      subtitle: 'motion, brand, generative design\n3d, vibe coding',
       current: 'current:\nthe collected works',
       past: 'past:\nvmgroupe\nkalshi\nmschf'
     }
@@ -16,6 +16,11 @@ export const navigationData = {
       id: 'work',
       title: 'Work',
       type: 'submenu',
+      content: {
+        title: 'Work',
+        description: 'Selected projects and experiments',
+        isGrid: true // Flag to render as video grid
+      },
       submenu: [
         {
           id: '2025-reel',
@@ -24,7 +29,58 @@ export const navigationData = {
           content: {
             title: 'Reel, 2025',
             description: 'collection of work, 2024 - 2025. Blender, C4D, Octane, Houdini, Cavalry, Claude',
-            videoKey: '2025-reel.mp4'
+            videoUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4'
+          }
+        },
+        {
+          id: 'it-cosmetics',
+          title: 'IT Cosmetics',
+          type: 'page',
+          content: {
+            title: 'IT Cosmetics',
+            description: 'Worked year round on 3D assets for IT Cosmetics. Responsible for environment design, lighting, lookdev, and rendering. Also was lead editor for IT Cosmetics holiday 2024 campaign',
+            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/itcosmetics/capaing24gif.gif',
+            imageGallery: {
+              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/itcosmetics/',
+              columns: 3,
+              clickToExpand: true,
+              images: [
+                'capaing24gif.gif',
+                '022025_ithol_blackfriday_sideangle_v01.png',
+                '022125_ithol_blackfriday_08_v09.png',
+                '022125_ithol_blackfriday_KV9_v06.png',
+                '022125_ithol_blackfriday_v04.png',
+                '071624_It_Helix_BoxArt_2025_lightpink_DayTonight_v04.png',
+                '0718_itD11_helix_glasspedastal_v01.png',
+                '0720_ITD11_sssRibbons_pedastal_v10.png',
+                '1121_ITHOI25_testingstation_v05.png',
+                '120524_ITC_KV2_Henry_v3_02.png',
+                'ITC_D11_tech_image_v010_anim2.png',
+                'ITC_editorial_25_KV_01_Charm-Transform-023.png',
+                'IT_D11_Shot4_drips_v10_nobigdrip.png',
+                'IT_D11_Shot8_24hr_BBUE_v014.png',
+                'IT_d11_PH1_KV1_v001_set_001_HP_0005.png',
+                'IT_d11_PH1_KV1_v001_set_001_HP_0007.png',
+                'ithol25_Boxes_Shelves_v01.png'
+              ]
+            }
+          }
+        },
+        {
+          id: 'expensify-f1',
+          title: 'Expensify F1',
+          type: 'page',
+          content: {
+            title: 'Expensify F1',
+            description: 'F1 sponsorship campaign visuals',
+            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/exfy_helmet_rotation_v040001-0360.mp4',
+            videoGallery: {
+              columns: 2,
+              videos: [
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/exfy_helmet_rotation_v040001-0360.mp4',
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/f1_v02_1_4x5.mp4'
+              ]
+            }
           }
         },
         {
@@ -34,7 +90,8 @@ export const navigationData = {
           content: {
             title: 'Fact Machine',
             description: 'Interactive fact-checking platform',
-            videoKey: 'fact-machine.mp4'
+            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/factmachine/FactMachine_v07_directorscut_1x1_3_thumb.jpg',
+            videoUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/factmachine/FactMachine_v07_directorscut_1x1_3_compressed.mp4'
           }
         },
         {
@@ -44,7 +101,31 @@ export const navigationData = {
           content: {
             title: 'ON Slide',
             description: 'Presentation design and motion graphics',
-            videoKey: 'on-slide.mp4'
+            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/RiddleON/0605_RiddleOn_ORANGE_0004.png',
+            imageGallery: {
+              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/RiddleON/',
+              columns: 2,
+              images: [
+                '0601_RiddleShoe_01.png',
+                '0601_RiddleShoe_02.png',
+                '0601_RiddleShoe_03.png',
+                '0601_RiddleShoe_04.png',
+                '0601_RiddleShoe_05.png',
+                '0601_RiddleShoe_06.png',
+                '0601_RiddleShoe_07.png',
+                '0601_RiddleShoe_08.png',
+                '0605_RiddleOn_0001.png',
+                '0605_RiddleOn_0002.png',
+                '0605_RiddleOn_0003.png',
+                '0605_RiddleOn_0004.png',
+                '0605_RiddleOn_0005.png',
+                '0605_RiddleOn_ORANGE_0001.png',
+                '0605_RiddleOn_ORANGE_0002.png',
+                '0605_RiddleOn_ORANGE_0003.png',
+                '0605_RiddleOn_ORANGE_0004.png',
+                '0605_RiddleOn_ORANGE_0005.png'
+              ]
+            }
           }
         },
         {
@@ -53,8 +134,19 @@ export const navigationData = {
           type: 'page',
           content: {
             title: 'Kalshi',
-            description: 'Prediction market platform',
-            videoKey: 'kalshi.mp4'
+            description: 'From their initial launch during the election, through some of their largest initial markets, I was brought on to conceptualize and produce VFX assets to promote Kalshis top markets. From initial strategy - pitching 5-10 concepts per market - through execution in 3D and 2D comp, I created eye catching videos that recieved millions of impressions. ',
+            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
+            videoGallery: {
+              columns: 2,
+              videos: [
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi/MSG2_KALSHI_v06_nozoom.mp4',
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/KalshiStates_Arizona.mov',
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/KalshiStates_Nevada_Harris.mov',
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi_sportshere_Dark_v07_1_vertical.mp4',
+                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/KlashiMapasset2_rendertest_v10_1x1.mov'
+              ]
+            }
           }
         },
         {
@@ -63,8 +155,47 @@ export const navigationData = {
           type: 'page',
           content: {
             title: 'MSCHF',
-            description: 'Creative studio projects',
-            videoKey: 'mschf.mp4'
+            description: 'MSCHF is an art collective known for their viral and provocative projects. I worked on a variety of motion and 3D assets for their 2 Million Dollar Puzzle. My work included 3D modeling, texturing, lighting, and animation to create engaging visuals that aligned with MSCHFs unique brand identity. I led the strategy and production of 30 animations over 8 months.',
+            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/MSCHF/03_16x9_outdoor_boxshot.mp4',
+            mediaGallery: {
+              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/MSCHF/',
+              columns: 3,
+              items: [
+                '02_4x5_lifestyle.mp4',
+                '02_float_pieces0000-0061.mp4',
+                '02_puzren10001-0250.mp4',
+                '02_scanrender0001-0062.mp4',
+                '03_16x9_outdoor_boxshot.mp4',
+                '04_Bball_pass1.mp4',
+                '04_Bookshelf_16x9.mp4',
+                '04_CoffeeTable_pass1_16x9.mp4',
+                '04_desk_16x9Render.mov',
+                '04_gameshow_BF_16x9.mp4',
+                '04_nightstand_pass10001-0112.mp4',
+                '05_bundledrop0001-0061.mp4',
+                '05_darkpileofpuzzle.png',
+                '05_ed2seq.mp4',
+                '06_STILL3_4x5.png',
+                '06_STILL5_glow_4x5.png',
+                '06_halloween_2_16x9.mp4',
+                '06_halloween_still1_4x5.png',
+                '06_haloweekrender10001-0250.mp4',
+                '06columbusday_unbox_16x9.mp4',
+                '06labor20001-0143.mp4',
+                '072DstyleIdea_1x1.mp4',
+                '07_2Dadstyle_thispuzchangelife_blue.png'
+              ]
+            }
+          }
+        },
+        {
+          id: 'modl',
+          title: 'Modl',
+          type: 'page',
+          content: {
+            title: 'Modl',
+            description: 'Furniture visualization demo',
+            videoUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/FurnitureDemo_jake_v01.mov'
           }
         }
       ]
@@ -75,7 +206,8 @@ export const navigationData = {
       type: 'page',
       content: {
         title: 'About',
-        description: 'Learn more about my work and process'
+        description: 'I am a motion designer and 3D artist specializing in brand content, generative design, and creative coding. I have worked with a variety of clients ranging from startups to established brands, helping them bring their ideas to life through engaging visuals.\n \n I use Blender, Cinema 4D, and Houdini in my 3D workflows. I use After Effects, Cavalry, and Davinci Resolve for 2D and comp. I use Figma for design and layout. \n \n increasingly I have begun developing tools and apps using LLMs to write code. My background is not in software engineering, but through my work building web experiences I have gained substantial intuitions around development. This website is enitrely developed by me using LLMs. '
+        
       }
     },
     {
@@ -84,7 +216,11 @@ export const navigationData = {
       type: 'page',
       content: {
         title: 'Contact',
-        description: 'Get in touch'
+        contactLinks: [
+          { label: 'Email', value: 'isthishenry@gmail.com', href: 'mailto:isthishenry@gmail.com' },
+          { label: 'Instagram', value: '@isthishenry', href: 'https://instagram.com/isthishenry' },
+          { label: 'LinkedIn', value: 'henryallan', href: 'https://linkedin.com/in/henryallan' }
+        ]
       }
     },
     {
@@ -93,7 +229,22 @@ export const navigationData = {
       type: 'page',
       content: {
         title: 'Projects',
-        description: 'Various projects and experiments'
+        description: 'Various projects and experiments',
+        sections: [
+          {
+            title: 'CatLand',
+            titleLink: 'https://catland-55120.web.app/',
+            description: 'A threejs game.',
+            imageGallery: {
+              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/catland/',
+              columns: 1,
+              images: [
+                'catland1.png',
+                'catland2.png'
+              ]
+            }
+          }
+        ]
       }
     }
   ]

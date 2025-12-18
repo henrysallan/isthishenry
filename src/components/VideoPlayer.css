@@ -1,0 +1,105 @@
+.video-player {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.video-player video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-player-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+.video-player-loading .spinner-tick {
+  stroke: rgba(255, 255, 255, 0.8);
+}
+
+.loading-percent {
+  font-family: 'IBMPlexMono-Regular', 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  color: #ffffff;
+}
+
+.video-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+  padding: 20px 16px 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.video-controls.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.timeline-container {
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.timeline {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  position: relative;
+  border-radius: 2px;
+}
+
+.timeline-progress {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.control-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.control-btn:hover {
+  opacity: 1;
+}
+
+.time-display {
+  color: white;
+  font-size: 11px;
+  opacity: 0.9;
+  font-family: 'IBM Plex Mono', monospace;
+  margin-left: auto;
+  margin-right: 8px;
+}

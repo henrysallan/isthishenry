@@ -14,13 +14,17 @@ export const getR2VideoUrl = (videoKey) => {
  * @param {string} videoKey - The key/path of the video in R2 bucket
  * @param {object} props - Additional video element props
  */
-export const R2Video = ({ videoKey, ...props }) => {
+export const R2Video = ({ videoKey, autoplay = true, ...props }) => {
   const videoUrl = getR2VideoUrl(videoKey);
   
   return (
     <video
       src={videoUrl}
       controls
+      autoPlay={autoplay}
+      muted
+      loop
+      playsInline
       {...props}
     />
   );

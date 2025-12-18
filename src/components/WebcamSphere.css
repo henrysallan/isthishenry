@@ -1,0 +1,22 @@
+.webcam-sphere-container {
+  position: fixed;
+  bottom: -15px;
+  left: 90px;
+  width: 90px;
+  height: 90px;
+  overflow: visible;
+  z-index: 1000;
+  background: transparent;
+  pointer-events: none;
+}
+
+.webcam-sphere-container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 768px) {
+  .webcam-sphere-container {
+    display: none;
+  }
+}

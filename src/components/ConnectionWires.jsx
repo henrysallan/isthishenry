@@ -3,14 +3,20 @@ import { useThree } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
-import { theme, getMenuPosition, getSocketPositions, getMenuInSocket, create3DBezierCurve } from '../config/theme';
+import { colorThemes, theme, getMenuPosition, getSocketPositions, getMenuInSocket, create3DBezierCurve } from '../config/theme';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
-function AnimatedLine({ points, color, lineWidth, delay = 0, visible = true }) {
+function AnimatedLine({ points, lineWidth, delay = 0, visible = true }) {
   const lineRef = useRef();
   const [visiblePoints, setVisiblePoints] = useState([points[0], points[0]]);
   const animationRef = useRef(null);
+  const currentTheme = useNavigationStore(state => state.currentTheme);
+  const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
+  
+  // Get color based on inversion state
+  const activeColors = colorThemes[currentTheme];
+  const color = isThemeInverted ? activeColors.background : activeColors.wire;
 
   useEffect(() => {
     // Kill any existing animation
@@ -110,13 +116,28 @@ function AnimatedLine({ points, color, lineWidth, delay = 0, visible = true }) {
 
 function ConnectionWires() {
   const { viewport } = useThree();
-  const { currentMenu, currentView, activeMenuItem } = useNavigationStore();
-  const [showWorkWire, setShowWorkWire] = useState(false);
+  const { currentMenu, currentView, activeMenuItem, expandedSubmenuId, currentTheme } = useNavigationStore();
+  const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
+  
+  const activeColors = colorThemes[currentTheme];
+  const wireColor = isThemeInverted ? activeColors.background : activeColors.wire;
+  
+  const [showSubmenuWire, setShowSubmenuWire] = useState(false);
+  const [displayedSubmenuId, setDisplayedSubmenuId] = useState(null);
   const [displayedPageWireItem, setDisplayedPageWireItem] = useState(null);
   const [isPageWireVisible, setIsPageWireVisible] = useState(true);
-  const previousMenuRef = useRef(currentMenu);
+  const [isMobile, setIsMobile] = useState(false);
+  const previousSubmenuRef = useRef(expandedSubmenuId);
   const previousViewRef = useRef(currentView);
   const previousActiveItemRef = useRef(activeMenuItem);
+
+  // Check for mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Calculate shared positioning values
   const leftColumnWidth = viewport.width * theme.layout.leftColumnRatio;
@@ -126,16 +147,22 @@ function ConnectionWires() {
   const mainMenuPositions = useMemo(() => {
     const menuCount = navigationData.mainMenu.length;
     return navigationData.mainMenu.map((item, index) => 
-      getMenuPosition('main', leftColumnCenter, index, menuCount)
+      getMenuPosition('main', leftColumnCenter, index, menuCount, isMobile)
     );
-  }, [leftColumnCenter]);
+  }, [leftColumnCenter, isMobile]);
 
-  const workSubmenuPositions = useMemo(() => {
-    const workSubmenu = navigationData.mainMenu.find(item => item.id === 'work')?.submenu || [];
-    return workSubmenu.map((item, index) => 
-      getMenuPosition('submenu', leftColumnCenter, index, workSubmenu.length)
+  // Dynamic submenu positions based on expanded parent
+  const submenuPositions = useMemo(() => {
+    const parentId = displayedSubmenuId || expandedSubmenuId;
+    if (!parentId) return [];
+    
+    const parent = navigationData.mainMenu.find(item => item.id === parentId);
+    if (!parent?.submenu) return [];
+    
+    return parent.submenu.map((item, index) => 
+      getMenuPosition('submenu', leftColumnCenter, index, parent.submenu.length, isMobile)
     );
-  }, [leftColumnCenter]);
+  }, [leftColumnCenter, isMobile, displayedSubmenuId, expandedSubmenuId]);
 
   // Home to main menu wire - always visible
   const homeToMainWire = useMemo(() => {
@@ -150,16 +177,21 @@ function ConnectionWires() {
     return null;
   }, [leftColumnCenter, mainMenuPositions]);
 
-  // Track when to show/hide work wire
+  // Track when to show/hide submenu wire (dynamic for any submenu)
   useEffect(() => {
-    if (currentMenu === 'work' && previousMenuRef.current !== 'work') {
-      setShowWorkWire(true);
-    } else if (currentMenu !== 'work' && previousMenuRef.current === 'work') {
-      // Keep showing but mark as not visible for animation
-      setTimeout(() => setShowWorkWire(false), 800); // Wait for animation to complete
+    if (expandedSubmenuId && previousSubmenuRef.current !== expandedSubmenuId) {
+      // New submenu opened
+      setDisplayedSubmenuId(expandedSubmenuId);
+      setShowSubmenuWire(true);
+    } else if (!expandedSubmenuId && previousSubmenuRef.current) {
+      // Submenu closed - keep showing for animation out
+      setTimeout(() => {
+        setShowSubmenuWire(false);
+        setDisplayedSubmenuId(null);
+      }, 800);
     }
-    previousMenuRef.current = currentMenu;
-  }, [currentMenu]);
+    previousSubmenuRef.current = expandedSubmenuId;
+  }, [expandedSubmenuId]);
 
   // Track when to show/hide page wire
   useEffect(() => {
@@ -172,36 +204,40 @@ function ConnectionWires() {
     } else if (!shouldShow && previousViewRef.current) {
       // Navigating away from page to home or menu
       setIsPageWireVisible(false);
-      setTimeout(() => setDisplayedPageWireItem(null), 800); // Wait for animation to complete
+      setTimeout(() => setDisplayedPageWireItem(null), 800);
     } else if (shouldShow && activeMenuItem !== previousActiveItemRef.current && previousActiveItemRef.current) {
-      // Switching between pages - animate out old, then animate in new
+      // Switching between pages
       setIsPageWireVisible(false);
       setTimeout(() => {
         setDisplayedPageWireItem(activeMenuItem);
         setIsPageWireVisible(true);
-      }, 800); // Wait for old wire to animate out
+      }, 800);
     }
     
     previousViewRef.current = currentView;
     previousActiveItemRef.current = activeMenuItem;
   }, [currentView, activeMenuItem]);
 
-  // Parent Work to submenu wire
-  const workToSubmenuWire = useMemo(() => {
-    // Generate wire points even if not currently visible (for animate out)
-    if (currentMenu === 'work' || showWorkWire) {
-      // Find Work menu item position from main menu (index 0)
-      const workMenuItemPos = mainMenuPositions[0]; // Work is the first item
-      const workSockets = getSocketPositions(workMenuItemPos, 'Work', 0.15);
-      const submenuInSocket = getMenuInSocket(workSubmenuPositions);
-      
-      if (submenuInSocket) {
-        const curvePoints = create3DBezierCurve(workSockets.out, submenuInSocket);
-        return curvePoints.map(p => new THREE.Vector3(...p));
-      }
+  // Dynamic parent to submenu wire
+  const parentToSubmenuWire = useMemo(() => {
+    const parentId = displayedSubmenuId || expandedSubmenuId;
+    if (!parentId || (!showSubmenuWire && !expandedSubmenuId)) return null;
+    
+    // Find the parent menu item index and its position
+    const parentIndex = navigationData.mainMenu.findIndex(item => item.id === parentId);
+    if (parentIndex === -1) return null;
+    
+    const parentItem = navigationData.mainMenu[parentIndex];
+    const parentPos = mainMenuPositions[parentIndex];
+    const parentSockets = getSocketPositions(parentPos, parentItem.title, 0.15);
+    const submenuInSocket = getMenuInSocket(submenuPositions);
+    
+    if (submenuInSocket) {
+      const curvePoints = create3DBezierCurve(parentSockets.out, submenuInSocket);
+      return curvePoints.map(p => new THREE.Vector3(...p));
     }
     return null;
-  }, [currentMenu, showWorkWire, mainMenuPositions, workSubmenuPositions]);
+  }, [displayedSubmenuId, expandedSubmenuId, showSubmenuWire, mainMenuPositions, submenuPositions]);
 
   // Menu item to page content wire
   const menuToPageWire = useMemo(() => {
@@ -220,12 +256,17 @@ function ConnectionWires() {
       menuItemPos = mainMenuPositions[menuItemIndex];
       menuItemText = navigationData.mainMenu[menuItemIndex].title;
     } else {
-      // Check if it's in work submenu
-      const workSubmenu = navigationData.mainMenu.find(item => item.id === 'work')?.submenu || [];
-      menuItemIndex = workSubmenu.findIndex(item => item.id === itemToUse);
-      if (menuItemIndex !== -1) {
-        menuItemPos = workSubmenuPositions[menuItemIndex];
-        menuItemText = workSubmenu[menuItemIndex].title;
+      // Check all submenus dynamically
+      for (const mainItem of navigationData.mainMenu) {
+        if (mainItem.submenu) {
+          const subIndex = mainItem.submenu.findIndex(item => item.id === itemToUse);
+          if (subIndex !== -1) {
+            // Calculate position for this submenu item
+            menuItemPos = getMenuPosition('submenu', leftColumnCenter, subIndex, mainItem.submenu.length, isMobile);
+            menuItemText = mainItem.submenu[subIndex].title;
+            break;
+          }
+        }
       }
     }
     
@@ -233,26 +274,34 @@ function ConnectionWires() {
       const menuSockets = getSocketPositions(menuItemPos, menuItemText, 0.15);
       
       // Content area left edge calculation
-      // When in submenu, camera has moved right, so content area appears further right
       const leftColumnWidth = viewport.width * theme.layout.leftColumnRatio;
       const contentLeftEdge = -viewport.width / 2 + leftColumnWidth;
       
       // Add camera offset when in submenu view
-      const cameraOffset = currentMenu === 'work' ? theme.spatial.cameraXMovement : 0;
+      const cameraOffset = expandedSubmenuId ? theme.spatial.cameraXMovement : 0;
       
       // Content area IN socket
-      const contentInSocket = [
-        contentLeftEdge + cameraOffset + theme.spatial.socketOffset.margin, // Standard margin from content edge
-        menuItemPos[1] + 2.0, // Y position - offset up by 0.1 units
-        menuItemPos[2] // Same Z depth as the menu item
-      ];
+      let contentInSocket;
+      if (isMobile) {
+        contentInSocket = [
+          viewport.width / 2 - theme.spatial.socketOffset.margin,
+          0,
+          menuItemPos[2]
+        ];
+      } else {
+        contentInSocket = [
+          contentLeftEdge + cameraOffset + theme.spatial.socketOffset.margin,
+          menuItemPos[1] + 2.0,
+          menuItemPos[2]
+        ];
+      }
       
       const curvePoints = create3DBezierCurve(menuSockets.out, contentInSocket);
       return curvePoints.map(p => new THREE.Vector3(...p));
     }
     
     return null;
-  }, [displayedPageWireItem, mainMenuPositions, workSubmenuPositions, viewport, currentMenu]);
+  }, [displayedPageWireItem, mainMenuPositions, viewport, expandedSubmenuId, isMobile, leftColumnCenter]);
 
   return (
     <group>
@@ -260,27 +309,25 @@ function ConnectionWires() {
       {homeToMainWire && (
         <Line
           points={homeToMainWire}
-          color={theme.colors.wire}
+          color={wireColor}
           lineWidth={0.5}
         />
       )}
 
-      {/* Work to submenu connection - animated with trim paths */}
-      {workToSubmenuWire && (
+      {/* Dynamic parent to submenu connection */}
+      {parentToSubmenuWire && (
         <AnimatedLine
-          points={workToSubmenuWire}
-          color={theme.colors.wire}
+          points={parentToSubmenuWire}
           lineWidth={0.5}
-          delay={currentMenu === 'work' ? 0.5 : 0}
-          visible={currentMenu === 'work'}
+          delay={expandedSubmenuId ? 0.5 : 0}
+          visible={!!expandedSubmenuId}
         />
       )}
 
-      {/* Menu item to page content connection - animated */}
+      {/* Menu item to page content connection */}
       {menuToPageWire && (
         <AnimatedLine
           points={menuToPageWire}
-          color={theme.colors.wire}
           lineWidth={0.5}
           delay={isPageWireVisible ? 0.3 : 0}
           visible={isPageWireVisible}

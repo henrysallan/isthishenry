@@ -8,37 +8,92 @@ function CustomCursor() {
   const [isHovering, setIsHovering] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [currentRadius, setCurrentRadius] = useState(20);
+  const [spinSpeed, setSpinSpeed] = useState(0.5); // Base spin speed
   const animationFrameRef = useRef(null);
+  const lastPositionRef = useRef({ x: 0, y: 0 });
+  const lastTimeRef = useRef(Date.now());
+  const velocityRef = useRef(0);
   const isHoveringMenuItem = useNavigationStore(state => state.isHoveringMenuItem);
+  const isHoveringLogo = useNavigationStore(state => state.isHoveringLogo);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
+      const now = Date.now();
+      const dt = now - lastTimeRef.current;
+      
+      // Calculate velocity
+      if (dt > 0) {
+        const dx = e.clientX - lastPositionRef.current.x;
+        const dy = e.clientY - lastPositionRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const velocity = distance / dt * 16; // Normalize to ~60fps
+        
+        // Smooth the velocity with lerp
+        velocityRef.current += (velocity - velocityRef.current) * 0.3;
+      }
+      
+      lastPositionRef.current = { x: e.clientX, y: e.clientY };
+      lastTimeRef.current = now;
+      
       setPosition({ x: e.clientX, y: e.clientY });
       if (!isVisible) setIsVisible(true);
       
       // Check if hovering over an interactive HTML element or SVG
       const target = e.target;
+      
+      // Skip cursor detection for p5 canvas - we use isHoveringLogo from store instead
+      const isP5Canvas = target.tagName === 'CANVAS' && target.closest('.p5-logo-container');
+      
       const computedCursor = window.getComputedStyle(target).cursor;
-      const isInteractive = target.tagName === 'BUTTON' || 
+      const isInteractive = !isP5Canvas && (
+                           target.tagName === 'BUTTON' || 
                            target.tagName === 'A' || 
                            target.closest('button') ||
                            target.closest('a') ||
                            computedCursor === 'pointer' ||
                            target.style.cursor === 'pointer' ||
-                           (target.tagName === 'rect' && target.classList.contains('rectangle-stroke'));
-      setIsHovering(isInteractive || isHoveringMenuItem);
+                           (target.tagName === 'rect' && target.classList.contains('rectangle-stroke')));
+      setIsHovering(isInteractive || isHoveringMenuItem || isHoveringLogo);
     };
 
     const handleMouseLeave = () => {
       setIsVisible(false);
     };
 
+    // Touch event handlers for mobile
+    const handleTouchStart = (e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        setPosition({ x: touch.clientX, y: touch.clientY });
+        setIsVisible(true);
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        setPosition({ x: touch.clientX, y: touch.clientY });
+        if (!isVisible) setIsVisible(true);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // Hide cursor after a short delay when touch ends
+      setTimeout(() => setIsVisible(false), 300);
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isVisible, isHoveringMenuItem]);
 
@@ -46,8 +101,21 @@ function CustomCursor() {
   useEffect(() => {
     let currentRotation = rotation;
     let currentRad = currentRadius;
+    let currentSpinSpeed = 0.5; // Base speed
     
     const animate = () => {
+      // Decay velocity over time when not moving
+      velocityRef.current *= 0.95;
+      
+      // Calculate target spin speed based on velocity
+      // Base speed is 0.5, max speed is around 8 at high velocity
+      const baseSpeed = 0.5;
+      const velocityMultiplier = Math.min(velocityRef.current * 0.5, 7.5); // Cap the multiplier
+      const targetSpinSpeed = baseSpeed + velocityMultiplier;
+      
+      // Smooth the spin speed transition
+      currentSpinSpeed += (targetSpinSpeed - currentSpinSpeed) * 0.1;
+      
       if (isHovering) {
         // Lerp rotation back to 0 (home orientation)
         currentRotation += (0 - currentRotation) * 0.15; // Fast lerp
@@ -55,8 +123,8 @@ function CustomCursor() {
         // Lerp radius from 20 to 13
         currentRad += (13 - currentRad) * 0.15;
       } else {
-        // Continuous slow spin
-        currentRotation += 0.5; // degrees per frame
+        // Continuous spin with velocity-based speed
+        currentRotation += currentSpinSpeed;
         if (currentRotation >= 360) currentRotation -= 360;
         
         // Lerp radius back to 20
@@ -65,6 +133,7 @@ function CustomCursor() {
       
       setRotation(currentRotation);
       setCurrentRadius(currentRad);
+      setSpinSpeed(currentSpinSpeed);
       
       animationFrameRef.current = requestAnimationFrame(animate);
     };
@@ -127,7 +196,8 @@ function CustomCursor() {
       className={`custom-cursor ${isVisible ? 'visible' : ''}`}
       style={{
         left: `${position.x}px`,
-        top: `${position.y}px`
+        top: `${position.y}px`,
+        mixBlendMode: 'difference'
       }}
     >
       <svg
@@ -155,7 +225,7 @@ function CustomCursor() {
               y1={innerY}
               x2={outerX}
               y2={outerY}
-              stroke="#666666"
+              stroke="#ffffff"
               strokeWidth="1"
               strokeLinecap="round"
             />
@@ -167,12 +237,20 @@ function CustomCursor() {
           <path
             key={`arc-${index}`}
             d={describeArc(center, center, arcRadius, arc.start, arc.end)}
-            stroke="#666666"
+            stroke="#ffffff"
             strokeWidth="1"
             fill="none"
             strokeLinecap="round"
           />
         ))}
+
+        {/* Center dot */}
+        <circle
+          cx={center}
+          cy={center}
+          r={1}
+          fill="#ffffff"
+        />
       </svg>
     </div>
   );

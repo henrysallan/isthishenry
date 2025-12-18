@@ -44,17 +44,16 @@ function LandingOverlay({ onComplete }) {
         gsap.to(rectangleRef.current, {
           strokeDashoffset: 0,
           duration: 1.2,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            // After stroke is drawn, wait 500ms then fill the cutout
-            setTimeout(() => {
-              if (cutoutRef.current) {
-                cutoutRef.current.style.opacity = '1';
-              }
-              setIsDrawn(true);
-            }, 500);
-          }
+          ease: 'power2.inOut'
         });
+        
+        // Start the cutout opacity after 100ms
+        setTimeout(() => {
+          if (cutoutRef.current) {
+            cutoutRef.current.style.opacity = '1';
+          }
+          setIsDrawn(true);
+        }, 900);
       }
     }, 500); // Small delay before drawing starts
 
@@ -75,7 +74,7 @@ function LandingOverlay({ onComplete }) {
     if (!isDrawn) return;
 
     const startTime = Date.now();
-    const dampingDuration = 100; // 100ms damping period
+    const dampingDuration = 1000; // 100ms damping period
 
     const handleMouseMove = (e) => {
       cursorPosRef.current = { x: e.clientX, y: e.clientY };
@@ -261,7 +260,7 @@ function LandingOverlay({ onComplete }) {
       <svg className="landing-svg">
         <defs>
           <mask id="cutoutMask">
-            {/* White background */}
+            {/* Background matching Three.js */}
             <rect width="100%" height="100%" fill="white" />
             {/* Black rectangle creates the cutout */}
             <rect
@@ -277,11 +276,11 @@ function LandingOverlay({ onComplete }) {
           </mask>
         </defs>
         
-        {/* White overlay with cutout mask */}
+        {/* Overlay with cutout mask */}
         <rect 
           width="100%" 
           height="100%" 
-          fill="white" 
+          fill="#f3f3f3" 
           mask="url(#cutoutMask)"
         />
         
