@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
-import { colorThemes, theme, getMenuPosition, getSocketPositions, getMenuInSocket, create3DBezierCurve } from '../config/theme';
+import { colorThemes, theme, getMenuPosition, getSocketPositions, getMenuInSocket, create3DBezierCurve, create3DBezierCurveVertical } from '../config/theme';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
@@ -283,9 +283,10 @@ function ConnectionWires() {
       // Content area IN socket
       let contentInSocket;
       if (isMobile) {
+        // On mobile, content is below the menu, so wire goes down
         contentInSocket = [
-          viewport.width / 2 - theme.spatial.socketOffset.margin,
-          0,
+          menuItemPos[0] + 0.5, // Slightly to the right of menu item
+          -viewport.height / 2 + 1, // Bottom of viewport (where content area starts)
           menuItemPos[2]
         ];
       } else {
@@ -296,7 +297,13 @@ function ConnectionWires() {
         ];
       }
       
-      const curvePoints = create3DBezierCurve(menuSockets.out, contentInSocket);
+      // Use different curve generation for mobile (vertical) vs desktop (horizontal)
+      let curvePoints;
+      if (isMobile) {
+        curvePoints = create3DBezierCurveVertical(menuSockets.out, contentInSocket);
+      } else {
+        curvePoints = create3DBezierCurve(menuSockets.out, contentInSocket);
+      }
       return curvePoints.map(p => new THREE.Vector3(...p));
     }
     

@@ -4,13 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Preload critical fonts -->
+    <link rel="preload" href="/font/Inter_Bold.ttf" as="font" type="font/ttf" crossorigin>
+    
     <style>
       @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&display=swap');
+      
+      /* Define Inter Bold font face early */
+      @font-face {
+        font-family: 'Inter Bold';
+        src: url('/font/Inter_Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-display: swap;
+      }
     </style>
     
     <!-- Preconnect to R2 CDN for faster asset loading -->
-    <link rel="preconnect" href="https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev" crossorigin>
-    <link rel="dns-prefetch" href="https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev">
+    <link rel="preconnect" href="https://cdn.isthishenry.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.isthishenry.com">
     
     <title>isthishenry</title>
   </head>

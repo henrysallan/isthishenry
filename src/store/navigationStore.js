@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 
+// Detect system dark mode preference
+const getSystemDarkModePreference = () => {
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return false; // Default to light mode if can't detect
+};
+
 export const useNavigationStore = create((set, get) => ({
   // Current view state - start on home page
   currentView: 'home', // 'home' or page id
@@ -9,7 +17,7 @@ export const useNavigationStore = create((set, get) => ({
   isHoveringMenuItem: false, // Track if hovering over any menu item
   isHoveringLogo: false, // Track if hovering over logo letters
   currentTheme: 'classic', // Active color theme
-  isThemeInverted: false, // Track if theme colors are inverted
+  isThemeInverted: getSystemDarkModePreference(), // Initialize based on system preference
   
   // Set logo hover state
   setIsHoveringLogo: (isHovering) => set({ isHoveringLogo: isHovering }),

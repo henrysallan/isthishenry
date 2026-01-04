@@ -162,7 +162,7 @@ export function getMenuInSocket(menuPositions) {
   ];
 }
 
-// Create a 3D bezier curve between two sockets
+// Create a 3D bezier curve between two sockets (horizontal curve - for desktop)
 export function create3DBezierCurve(startSocket, endSocket, segments = 30) {
   const [x1, y1, z1] = startSocket;
   const [x2, y2, z2] = endSocket;
@@ -177,6 +177,53 @@ export function create3DBezierCurve(startSocket, endSocket, segments = 30) {
   
   const cp2X = x1 + dx * 0.4;
   const cp2Y = y2;
+  const cp2Z = z2;
+  
+  // Generate bezier curve points
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const t1 = 1 - t;
+    
+    // Cubic bezier formula
+    const x = t1 * t1 * t1 * x1 + 
+              3 * t1 * t1 * t * cp1X + 
+              3 * t1 * t * t * cp2X + 
+              t * t * t * x2;
+              
+    const y = t1 * t1 * t1 * y1 + 
+              3 * t1 * t1 * t * cp1Y + 
+              3 * t1 * t * t * cp2Y + 
+              t * t * t * y2;
+              
+    const z = t1 * t1 * t1 * z1 + 
+              3 * t1 * t1 * t * cp1Z + 
+              3 * t1 * t * t * cp2Z + 
+              t * t * t * z2;
+    
+    points.push([x, y, z]);
+  }
+  
+  return points;
+}
+
+// Create a 3D bezier curve optimized for vertical direction (for mobile)
+export function create3DBezierCurveVertical(startSocket, endSocket, segments = 30) {
+  const [x1, y1, z1] = startSocket;
+  const [x2, y2, z2] = endSocket;
+  
+  const points = [];
+  const dy = y2 - y1;
+  const dx = x2 - x1;
+  
+  // Control points with horizontal arc for more curved appearance
+  const arcStrength = 2; // How much the curve arcs outward horizontally
+  
+  const cp1X = x1 + arcStrength;
+  const cp1Y = y1 + dy * 0.3;
+  const cp1Z = z1;
+  
+  const cp2X = x2 + arcStrength;
+  const cp2Y = y1 + dy * 0.7;
   const cp2Z = z2;
   
   // Generate bezier curve points

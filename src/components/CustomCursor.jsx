@@ -51,7 +51,9 @@ function CustomCursor() {
                            target.closest('button') ||
                            target.closest('a') ||
                            computedCursor === 'pointer' ||
+                           computedCursor === 'grab' ||
                            target.style.cursor === 'pointer' ||
+                           target.style.cursor === 'grab' ||
                            (target.tagName === 'rect' && target.classList.contains('rectangle-stroke')));
       setIsHovering(isInteractive || isHoveringMenuItem || isHoveringLogo);
     };

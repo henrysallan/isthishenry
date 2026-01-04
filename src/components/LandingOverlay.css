@@ -5,7 +5,7 @@
   width: 100vw;
   height: 100vh;
   z-index: 9999;
-  cursor: pointer;
+  cursor: default;
 }
 
 .landing-svg {
@@ -23,4 +23,21 @@
   stroke-dashoffset: 700;
   /* stroke-dasharray updated dynamically in JS based on perimeter */
   /* No transitions - handled by JS lerp */
+}
+
+/* Bezier system styles */
+.bezier-system {
+  pointer-events: none;
+}
+
+.bezier-point-group circle {
+  transition: r 0.15s ease, fill 0.15s ease;
+}
+
+.bezier-point-group circle:hover {
+  fill: #e0e0e0;
+}
+
+.bezier-point-group circle:active {
+  cursor: grabbing;
 }

@@ -370,6 +370,9 @@ function ContentArea() {
     const contentArea = contentAreaRef.current;
     if (!contentArea) return;
 
+    // Check if mobile
+    const isMobile = window.innerWidth <= 768;
+
     // Get current computed values to animate from
     const currentLeft = parseFloat(getComputedStyle(contentArea).left);
     const currentWidth = parseFloat(getComputedStyle(contentArea).width);
@@ -378,63 +381,73 @@ function ContentArea() {
     const contentElements = contentArea.querySelectorAll('.video-container:not(.full-bleed), .image-gallery, .video-gallery, .media-gallery');
 
     if (!isExpanded) {
-      // EXPAND: container first, then content follows
+      // EXPAND
       setIsExpanded(true);
       
-      // Animate container
-      gsap.fromTo(contentArea, 
-        { left: currentLeft, width: currentWidth },
-        {
-          left: 8,
-          width: window.innerWidth - 16,
-          duration: 0.6,
-          ease: 'power2.inOut'
-        }
-      );
-      
-      // Animate content with delay - use percentage-based margins for centering
-      contentElements.forEach(el => {
-        gsap.to(el, {
-          maxWidth: '55%',
-          marginLeft: '22.5%',
-          marginRight: '22.5%',
-          duration: 0.7,
-          delay: 0.15,
-          ease: 'power2.inOut'
+      if (isMobile) {
+        // Mobile: CSS handles the transition via .expanded class
+        // Just toggle the state, CSS transitions do the rest
+      } else {
+        // Desktop: expand to full width
+        gsap.fromTo(contentArea, 
+          { left: currentLeft, width: currentWidth },
+          {
+            left: 8,
+            width: window.innerWidth - 16,
+            duration: 0.6,
+            ease: 'power2.inOut'
+          }
+        );
+        
+        // Animate content with delay - use percentage-based margins for centering
+        contentElements.forEach(el => {
+          gsap.to(el, {
+            maxWidth: '55%',
+            marginLeft: '22.5%',
+            marginRight: '22.5%',
+            duration: 0.7,
+            delay: 0.15,
+            ease: 'power2.inOut'
+          });
         });
-      });
+      }
       
     } else {
-      // COLLAPSE: content first, then container follows
-      
-      // Animate content back to full width first
-      contentElements.forEach(el => {
-        gsap.to(el, {
-          maxWidth: '100%',
-          marginLeft: 0,
-          marginRight: 0,
-          duration: 0.5,
-          ease: 'power2.inOut'
-        });
-      });
-      
-      // Animate container with delay
-      gsap.fromTo(contentArea,
-        { left: currentLeft, width: currentWidth },
-        {
-          left: window.innerWidth * 3 / 7,
-          width: window.innerWidth * 4 / 7 - 16,
-          duration: 0.6,
-          delay: 0.3,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            contentArea.style.left = 'calc(100vw * 3 / 7)';
-            contentArea.style.width = 'calc(100vw * 4 / 7 - 16px)';
-          }
-        }
-      );
-      
+      // COLLAPSE
       setIsExpanded(false);
+      
+      if (isMobile) {
+        // Mobile: CSS handles the transition via removing .expanded class
+        // Just toggle the state, CSS transitions do the rest
+      } else {
+        // Desktop: collapse back to original position
+        // Animate content back to full width first
+        contentElements.forEach(el => {
+          gsap.to(el, {
+            maxWidth: '100%',
+            marginLeft: 0,
+            marginRight: 0,
+            duration: 0.5,
+            ease: 'power2.inOut'
+          });
+        });
+        
+        // Animate container with delay
+        gsap.fromTo(contentArea,
+          { left: currentLeft, width: currentWidth },
+          {
+            left: window.innerWidth * 3 / 7,
+            width: window.innerWidth * 4 / 7 - 16,
+            duration: 0.6,
+            delay: 0.3,
+            ease: 'power2.inOut',
+            onComplete: () => {
+              contentArea.style.left = 'calc(100vw * 3 / 7)';
+              contentArea.style.width = 'calc(100vw * 4 / 7 - 16px)';
+            }
+          }
+        );
+      }
     }
   };
 
@@ -536,7 +549,7 @@ function ContentArea() {
         <div className="home-content">
           <div className="video-container full-bleed">
             <VideoPlayer 
-              src="https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4"
+              src="https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4"
               autoplay={true}
             />
           </div>

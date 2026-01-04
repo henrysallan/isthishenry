@@ -341,6 +341,45 @@
     max-height: 50vh;
     margin: 0;
     border-radius: 6px;
+    transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Mobile expanded state - full height, stay full width */
+  .content-area.expanded {
+    height: calc(100vh - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  /* Override desktop expanded styles that narrow the content */
+  .content-area.expanded .video-container {
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  /* Home content expanded on mobile - full width video with aspect ratio */
+  .content-area.expanded .home-content {
+    padding: 10px;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .content-area.expanded .home-content .video-container.full-bleed {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .content-area.expanded .image-gallery,
+  .content-area.expanded .video-gallery,
+  .content-area.expanded .media-gallery {
+    max-width: 100%;
+  }
+
+  .content-area.expanded .page-header {
+    max-width: 100%;
   }
 
   /* Text-only pages like About should be full width on mobile */

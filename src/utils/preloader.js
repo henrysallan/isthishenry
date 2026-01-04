@@ -9,7 +9,7 @@ function getAllAssetUrls() {
   };
 
   // Home reel (highest priority)
-  urls.videos.add('https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4');
+  urls.videos.add('https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4');
 
   // Extract from work items
   const workMenu = navigationData.mainMenu.find(item => item.id === 'work');
@@ -238,7 +238,7 @@ export function getCriticalAssetUrls() {
   
   // Home reel
   urls.push({
-    url: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4',
+    url: 'https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4',
     type: 'video'
   });
 

@@ -29,7 +29,7 @@ export const navigationData = {
           content: {
             title: 'Reel, 2025',
             description: 'collection of work, 2024 - 2025. Blender, C4D, Octane, Houdini, Cavalry, Claude',
-            videoUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4'
+            videoUrl: 'https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4'
           }
         },
         {
@@ -39,9 +39,9 @@ export const navigationData = {
           content: {
             title: 'IT Cosmetics',
             description: 'Worked year round on 3D assets for IT Cosmetics. Responsible for environment design, lighting, lookdev, and rendering. Also was lead editor for IT Cosmetics holiday 2024 campaign',
-            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/itcosmetics/capaing24gif.gif',
+            thumbnail: 'https://cdn.isthishenry.com/itcosmetics/capaing24gif.gif',
             imageGallery: {
-              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/itcosmetics/',
+              baseUrl: 'https://cdn.isthishenry.com/itcosmetics/',
               columns: 3,
               clickToExpand: true,
               images: [
@@ -73,12 +73,12 @@ export const navigationData = {
           content: {
             title: 'Expensify F1',
             description: 'F1 sponsorship campaign visuals',
-            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/exfy_helmet_rotation_v040001-0360.mp4',
+            thumbnail: 'https://cdn.isthishenry.com/exfy_helmet_rotation_v040001-0360.mp4',
             videoGallery: {
               columns: 2,
               videos: [
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/exfy_helmet_rotation_v040001-0360.mp4',
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/f1_v02_1_4x5.mp4'
+                'https://cdn.isthishenry.com/exfy_helmet_rotation_v040001-0360.mp4',
+                'https://cdn.isthishenry.com/f1_v02_1_4x5.mp4'
               ]
             }
           }
@@ -90,8 +90,8 @@ export const navigationData = {
           content: {
             title: 'Fact Machine',
             description: 'Interactive fact-checking platform',
-            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/factmachine/FactMachine_v07_directorscut_1x1_3_thumb.jpg',
-            videoUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/factmachine/FactMachine_v07_directorscut_1x1_3_compressed.mp4'
+            thumbnail: 'https://cdn.isthishenry.com/factmachine/FactMachine_v07_directorscut_1x1_3_thumb.jpg',
+            videoUrl: 'https://cdn.isthishenry.com/factmachine/FactMachine_v07_directorscut_1x1_3_compressed.mp4'
           }
         },
         {
@@ -101,9 +101,9 @@ export const navigationData = {
           content: {
             title: 'ON Slide',
             description: 'Presentation design and motion graphics',
-            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/RiddleON/0605_RiddleOn_ORANGE_0004.png',
+            thumbnail: 'https://cdn.isthishenry.com/RiddleON/0605_RiddleOn_ORANGE_0004.png',
             imageGallery: {
-              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/RiddleON/',
+              baseUrl: 'https://cdn.isthishenry.com/RiddleON/',
               columns: 2,
               images: [
                 '0601_RiddleShoe_01.png',
@@ -135,16 +135,16 @@ export const navigationData = {
           content: {
             title: 'Kalshi',
             description: 'From their initial launch during the election, through some of their largest initial markets, I was brought on to conceptualize and produce VFX assets to promote Kalshis top markets. From initial strategy - pitching 5-10 concepts per market - through execution in 3D and 2D comp, I created eye catching videos that recieved millions of impressions. ',
-            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
+            thumbnail: 'https://cdn.isthishenry.com/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
             videoGallery: {
               columns: 2,
               videos: [
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi/MSG2_KALSHI_v06_nozoom.mp4',
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/KalshiStates_Arizona.mov',
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/KalshiStates_Nevada_Harris.mov',
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/Kalshi_sportshere_Dark_v07_1_vertical.mp4',
-                'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/KlashiMapasset2_rendertest_v10_1x1.mov'
+                'https://cdn.isthishenry.com/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
+                'https://cdn.isthishenry.com/Kalshi/MSG2_KALSHI_v06_nozoom.mp4',
+                'https://cdn.isthishenry.com/KalshiStates_Arizona.mov',
+                'https://cdn.isthishenry.com/KalshiStates_Nevada_Harris.mov',
+                'https://cdn.isthishenry.com/Kalshi_sportshere_Dark_v07_1_vertical.mp4',
+                'https://cdn.isthishenry.com/KlashiMapasset2_rendertest_v10_1x1.mov'
               ]
             }
           }
@@ -156,9 +156,9 @@ export const navigationData = {
           content: {
             title: 'MSCHF',
             description: 'MSCHF is an art collective known for their viral and provocative projects. I worked on a variety of motion and 3D assets for their 2 Million Dollar Puzzle. My work included 3D modeling, texturing, lighting, and animation to create engaging visuals that aligned with MSCHFs unique brand identity. I led the strategy and production of 30 animations over 8 months.',
-            thumbnail: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/MSCHF/03_16x9_outdoor_boxshot.mp4',
+            thumbnail: 'https://cdn.isthishenry.com/MSCHF/03_16x9_outdoor_boxshot.mp4',
             mediaGallery: {
-              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/MSCHF/',
+              baseUrl: 'https://cdn.isthishenry.com/MSCHF/',
               columns: 3,
               items: [
                 '02_4x5_lifestyle.mp4',
@@ -195,7 +195,7 @@ export const navigationData = {
           content: {
             title: 'Modl',
             description: 'Furniture visualization demo',
-            videoUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/FurnitureDemo_jake_v01.mov'
+            videoUrl: 'https://cdn.isthishenry.com/FurnitureDemo_jake_v01.mov'
           }
         }
       ]
@@ -236,7 +236,7 @@ export const navigationData = {
             titleLink: 'https://catland-55120.web.app/',
             description: 'A threejs game.',
             imageGallery: {
-              baseUrl: 'https://pub-def22c25b0ac4286a1faba9ede8642ce.r2.dev/catland/',
+              baseUrl: 'https://cdn.isthishenry.com/catland/',
               columns: 1,
               images: [
                 'catland1.png',

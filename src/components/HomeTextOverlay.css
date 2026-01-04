@@ -2,7 +2,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 5;
+  z-index: 10001;
   padding: 20px;
   pointer-events: none;
   color: var(--color-text);
@@ -15,7 +15,7 @@
   width: 350px;
   height: 150px;
   pointer-events: auto;
-  z-index: 6;
+  z-index: 10002;
   overflow: hidden;
 }
 

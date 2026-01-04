@@ -5,6 +5,7 @@ import { useNavigationStore } from '../store/navigationStore';
 // Preload Inter Bold font using FontFace API
 let fontPreloaded = false;
 let fontPreloadPromise = null;
+let cachedP5Font = null;
 
 const preloadFont = () => {
   if (fontPreloadPromise) return fontPreloadPromise;
@@ -20,11 +21,12 @@ const preloadFont = () => {
     // Try to load the font
     const font = new FontFace('Inter Bold', 'url(/font/Inter_Bold.ttf)');
     
-    // Set a timeout
+    // Set a timeout - reduced to 1s for faster fallback
     const timeout = setTimeout(() => {
       console.warn('Font preload timeout, proceeding anyway');
+      fontPreloaded = true; // Mark as done so we don't block
       resolve(false);
-    }, 2000);
+    }, 1000);
 
     font.load().then((loadedFont) => {
       clearTimeout(timeout);
@@ -34,6 +36,7 @@ const preloadFont = () => {
     }).catch((err) => {
       clearTimeout(timeout);
       console.warn('Font preload failed:', err);
+      fontPreloaded = true; // Mark as done so we don't block
       resolve(false);
     });
   });
@@ -383,24 +386,30 @@ function P5Logo({ text = 'Henry Allan', fontSize = 16 }) {
       };
 
       const loadFont = async () => {
+        // If we already have a cached p5 font from a previous instance, use it
+        if (cachedP5Font) {
+          font = cachedP5Font;
+          initializeLetters();
+          return;
+        }
+        
         // Wait for preload to complete (should be fast if already done)
         await preloadFont();
         
-        if (fontPreloaded) {
-          // Font was preloaded via FontFace API, try to load in p5
+        // Try to load font in p5, but with a very short timeout since font should already be loaded
+        try {
           const timeout = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Font load timeout')), 1500);
+            setTimeout(() => reject(new Error('Font load timeout')), 500);
           });
-
-          try {
-            font = await Promise.race([
-              p.loadFont('/font/Inter_Bold.ttf'),
-              timeout
-            ]);
-          } catch (err) {
-            console.warn('p5 font load failed, using CSS font:', err);
-            font = null;
-          }
+          
+          font = await Promise.race([
+            p.loadFont('/font/Inter_Bold.ttf'),
+            timeout
+          ]);
+          cachedP5Font = font; // Cache for future instances
+        } catch (err) {
+          console.warn('p5 font load failed, using CSS font:', err);
+          font = null;
         }
         
         initializeLetters();
@@ -412,7 +421,15 @@ function P5Logo({ text = 'Henry Allan', fontSize = 16 }) {
       p.setup = () => {
         p.createCanvas(canvasWidth, canvasHeight);
         p.pixelDensity(window.devicePixelRatio || 1);
-        loadFont();
+        
+        // If we have a cached font, initialize immediately
+        if (cachedP5Font) {
+          font = cachedP5Font;
+          initializeLetters();
+        } else {
+          // Otherwise load async
+          loadFont();
+        }
       };
 
       p.windowResized = () => {
