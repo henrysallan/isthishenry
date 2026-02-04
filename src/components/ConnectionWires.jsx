@@ -1,11 +1,358 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import { Line } from '@react-three/drei';
 import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
 import { colorThemes, theme, getMenuPosition, getSocketPositions, getMenuInSocket, create3DBezierCurve, create3DBezierCurveVertical } from '../config/theme';
 import * as THREE from 'three';
 import gsap from 'gsap';
+
+// Helper to get point and tangent at a specific t value along a bezier curve (array of points)
+function getPointAndTangentAtT(points, t) {
+  const totalPoints = points.length;
+  const exactIndex = t * (totalPoints - 1);
+  const baseIndex = Math.floor(exactIndex);
+  const fraction = exactIndex - baseIndex;
+  
+  // Get the point at t
+  let point;
+  if (baseIndex >= totalPoints - 1) {
+    point = points[totalPoints - 1].clone();
+  } else {
+    const p1 = points[baseIndex];
+    const p2 = points[baseIndex + 1];
+    point = new THREE.Vector3(
+      p1.x + (p2.x - p1.x) * fraction,
+      p1.y + (p2.y - p1.y) * fraction,
+      p1.z + (p2.z - p1.z) * fraction
+    );
+  }
+  
+  // Get tangent (direction) at t
+  let tangent;
+  if (baseIndex >= totalPoints - 1) {
+    const p1 = points[totalPoints - 2];
+    const p2 = points[totalPoints - 1];
+    tangent = new THREE.Vector3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z).normalize();
+  } else {
+    const p1 = points[baseIndex];
+    const p2 = points[baseIndex + 1];
+    tangent = new THREE.Vector3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z).normalize();
+  }
+  
+  return { point, tangent };
+}
+
+// Arrow chevron component that points along the line toward origin
+function ArrowChevron({ position, tangent, color, opacity, scale = 0.06 }) {
+  // Tangent points toward destination, so we flip it to point toward origin
+  const angle = Math.atan2(-tangent.y, -tangent.x);
+  
+  // Create chevron points (< shape)
+  const armLength = scale;
+  const armAngle = Math.PI / 6; // 30 degrees
+  
+  const tip = new THREE.Vector3(0, 0, 0);
+  const topArm = new THREE.Vector3(
+    Math.cos(armAngle) * armLength,
+    Math.sin(armAngle) * armLength,
+    0
+  );
+  const bottomArm = new THREE.Vector3(
+    Math.cos(-armAngle) * armLength,
+    Math.sin(-armAngle) * armLength,
+    0
+  );
+  
+  return (
+    <group position={position} rotation={[0, 0, angle]}>
+      <Line
+        points={[topArm, tip, bottomArm]}
+        color={color}
+        lineWidth={1.5}
+        transparent
+        opacity={opacity}
+      />
+    </group>
+  );
+}
+
+// Clickable wire with arrows pointing toward origin
+function ClickableWire({ points, onClick, baseLineWidth = 0.5, hoverLineWidth = 1.5 }) {
+  const [hovered, setHovered] = useState(false);
+  const lineWidthRef = useRef(baseLineWidth);
+  const [currentLineWidth, setCurrentLineWidth] = useState(baseLineWidth);
+  const setHoveringMenuItem = useNavigationStore(state => state.setHoveringMenuItem);
+  const currentTheme = useNavigationStore(state => state.currentTheme);
+  const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
+  
+  const activeColors = colorThemes[currentTheme];
+  const color = isThemeInverted ? activeColors.background : activeColors.wire;
+  
+  // Lerp line width on hover
+  useFrame(() => {
+    const targetWidth = hovered ? hoverLineWidth : baseLineWidth;
+    lineWidthRef.current += (targetWidth - lineWidthRef.current) * 0.15;
+    
+    // Only update state if there's a meaningful change (avoid unnecessary re-renders)
+    if (Math.abs(lineWidthRef.current - currentLineWidth) > 0.01) {
+      setCurrentLineWidth(lineWidthRef.current);
+    }
+  });
+  
+  // Calculate arrow positions at 1/3 and 2/3 of the line
+  const { arrow1, arrow2 } = useMemo(() => {
+    if (!points || points.length < 2) return { arrow1: null, arrow2: null };
+    
+    const data1 = getPointAndTangentAtT(points, 1/3);
+    const data2 = getPointAndTangentAtT(points, 2/3);
+    
+    return {
+      arrow1: { position: data1.point, tangent: data1.tangent },
+      arrow2: { position: data2.point, tangent: data2.tangent }
+    };
+  }, [points]);
+  
+  // Create a wider invisible hit area for easier clicking
+  const hitAreaPoints = useMemo(() => {
+    return points;
+  }, [points]);
+  
+  useEffect(() => {
+    document.body.style.cursor = hovered ? 'pointer' : 'auto';
+    setHoveringMenuItem(hovered);
+  }, [hovered, setHoveringMenuItem]);
+  
+  const opacity = hovered ? 1 : 0.6;
+  
+  return (
+    <group>
+      {/* Invisible hit area - wider line for easier clicking */}
+      <Line
+        points={hitAreaPoints}
+        color={color}
+        lineWidth={15}
+        transparent
+        opacity={0}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      />
+      
+      {/* Visible line */}
+      <Line
+        points={points}
+        color={color}
+        lineWidth={currentLineWidth}
+        transparent
+        opacity={opacity}
+      />
+      
+      {/* Arrow at 1/3 position */}
+      {arrow1 && (
+        <ArrowChevron
+          position={arrow1.position}
+          tangent={arrow1.tangent}
+          color={color}
+          opacity={opacity}
+        />
+      )}
+      
+      {/* Arrow at 2/3 position */}
+      {arrow2 && (
+        <ArrowChevron
+          position={arrow2.position}
+          tangent={arrow2.tangent}
+          color={color}
+          opacity={opacity}
+        />
+      )}
+    </group>
+  );
+}
+
+// Animated clickable wire with arrows
+function AnimatedClickableWire({ points, lineWidth, delay = 0, visible = true, onClick, baseLineWidth = 0.5, hoverLineWidth = 1.5 }) {
+  const [visiblePoints, setVisiblePoints] = useState([points[0], points[0]]);
+  const [showArrows, setShowArrows] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const lineWidthRef = useRef(baseLineWidth);
+  const [currentLineWidth, setCurrentLineWidth] = useState(baseLineWidth);
+  const animationRef = useRef(null);
+  const setHoveringMenuItem = useNavigationStore(state => state.setHoveringMenuItem);
+  const currentTheme = useNavigationStore(state => state.currentTheme);
+  const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
+  
+  const activeColors = colorThemes[currentTheme];
+  const color = isThemeInverted ? activeColors.background : activeColors.wire;
+
+  // Lerp line width on hover
+  useFrame(() => {
+    const targetWidth = hovered ? hoverLineWidth : baseLineWidth;
+    lineWidthRef.current += (targetWidth - lineWidthRef.current) * 0.15;
+    
+    if (Math.abs(lineWidthRef.current - currentLineWidth) > 0.01) {
+      setCurrentLineWidth(lineWidthRef.current);
+    }
+  });
+
+  useEffect(() => {
+    if (animationRef.current) {
+      animationRef.current.kill();
+    }
+
+    if (visible) {
+      setVisiblePoints([points[0], points[0]]);
+      setShowArrows(false);
+      
+      const obj = { progress: 0 };
+      animationRef.current = gsap.to(obj, {
+        progress: 1,
+        duration: 0.8,
+        ease: 'power2.out',
+        delay: delay,
+        onUpdate: () => {
+          const totalPoints = points.length;
+          const exactIndex = obj.progress * (totalPoints - 1);
+          const baseIndex = Math.floor(exactIndex);
+          const fraction = exactIndex - baseIndex;
+          
+          const newPoints = points.slice(0, baseIndex + 1);
+          
+          if (baseIndex < totalPoints - 1 && fraction > 0) {
+            const p1 = points[baseIndex];
+            const p2 = points[baseIndex + 1];
+            const interpolated = new THREE.Vector3(
+              p1.x + (p2.x - p1.x) * fraction,
+              p1.y + (p2.y - p1.y) * fraction,
+              p1.z + (p2.z - p1.z) * fraction
+            );
+            newPoints.push(interpolated);
+          }
+          
+          setVisiblePoints(newPoints);
+          
+          // Show arrows after line is mostly drawn
+          if (obj.progress > 0.7 && !showArrows) {
+            setShowArrows(true);
+          }
+        },
+        onComplete: () => {
+          setShowArrows(true);
+        }
+      });
+    } else {
+      setShowArrows(false);
+      const obj = { progress: 1 };
+      animationRef.current = gsap.to(obj, {
+        progress: 0,
+        duration: 0.8,
+        ease: 'power2.out',
+        onUpdate: () => {
+          const totalPoints = points.length;
+          const exactIndex = obj.progress * (totalPoints - 1);
+          const baseIndex = Math.floor(exactIndex);
+          const fraction = exactIndex - baseIndex;
+          
+          if (baseIndex === 0 && fraction === 0) {
+            setVisiblePoints([points[0], points[0]]);
+            return;
+          }
+          
+          const newPoints = points.slice(0, baseIndex + 1);
+          
+          if (baseIndex < totalPoints - 1 && fraction > 0) {
+            const p1 = points[baseIndex];
+            const p2 = points[baseIndex + 1];
+            const interpolated = new THREE.Vector3(
+              p1.x + (p2.x - p1.x) * fraction,
+              p1.y + (p2.y - p1.y) * fraction,
+              p1.z + (p2.z - p1.z) * fraction
+            );
+            newPoints.push(interpolated);
+          }
+          
+          setVisiblePoints(newPoints);
+        }
+      });
+    }
+
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.kill();
+      }
+    };
+  }, [points, delay, visible]);
+
+  useEffect(() => {
+    document.body.style.cursor = hovered ? 'pointer' : 'auto';
+    setHoveringMenuItem(hovered);
+  }, [hovered, setHoveringMenuItem]);
+
+  // Calculate arrow positions based on full path
+  const { arrow1, arrow2 } = useMemo(() => {
+    if (!points || points.length < 2) return { arrow1: null, arrow2: null };
+    
+    const data1 = getPointAndTangentAtT(points, 1/3);
+    const data2 = getPointAndTangentAtT(points, 2/3);
+    
+    return {
+      arrow1: { position: data1.point, tangent: data1.tangent },
+      arrow2: { position: data2.point, tangent: data2.tangent }
+    };
+  }, [points]);
+
+  const opacity = hovered ? 1 : 0.6;
+
+  return (
+    <group>
+      {/* Invisible hit area */}
+      <Line
+        points={points}
+        color={color}
+        lineWidth={15}
+        transparent
+        opacity={0}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (visible && onClick) onClick();
+        }}
+      />
+      
+      {/* Visible animated line */}
+      <Line
+        points={visiblePoints}
+        color={color}
+        lineWidth={currentLineWidth}
+        transparent
+        opacity={opacity}
+      />
+      
+      {/* Arrows - only show when line is drawn and visible */}
+      {showArrows && visible && arrow1 && (
+        <ArrowChevron
+          position={arrow1.position}
+          tangent={arrow1.tangent}
+          color={color}
+          opacity={opacity}
+        />
+      )}
+      {showArrows && visible && arrow2 && (
+        <ArrowChevron
+          position={arrow2.position}
+          tangent={arrow2.tangent}
+          color={color}
+          opacity={opacity}
+        />
+      )}
+    </group>
+  );
+}
 
 function AnimatedLine({ points, lineWidth, delay = 0, visible = true }) {
   const lineRef = useRef();
@@ -116,7 +463,7 @@ function AnimatedLine({ points, lineWidth, delay = 0, visible = true }) {
 
 function ConnectionWires() {
   const { viewport } = useThree();
-  const { currentMenu, currentView, activeMenuItem, expandedSubmenuId, currentTheme } = useNavigationStore();
+  const { currentMenu, currentView, activeMenuItem, expandedSubmenuId, currentTheme, navigateToHome, navigateToSubmenu } = useNavigationStore();
   const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
   
   const activeColors = colorThemes[currentTheme];
@@ -312,27 +659,31 @@ function ConnectionWires() {
 
   return (
     <group>
-      {/* Home to main menu connection */}
+      {/* Home to main menu connection - clickable to go to Home */}
       {homeToMainWire && (
-        <Line
+        <ClickableWire
           points={homeToMainWire}
-          color={wireColor}
-          lineWidth={0.5}
+          onClick={() => navigateToHome()}
+          baseLineWidth={0.5}
+          hoverLineWidth={1.5}
         />
       )}
 
-      {/* Dynamic parent to submenu connection */}
+      {/* Dynamic parent to submenu connection - clickable to collapse submenu */}
       {parentToSubmenuWire && (
-        <AnimatedLine
+        <AnimatedClickableWire
           points={parentToSubmenuWire}
           lineWidth={0.5}
           delay={expandedSubmenuId ? 0.5 : 0}
           visible={!!expandedSubmenuId}
+          onClick={() => navigateToSubmenu(expandedSubmenuId)}
+          baseLineWidth={0.5}
+          hoverLineWidth={1.5}
         />
       )}
 
-      {/* Menu item to page content connection */}
-      {menuToPageWire && (
+      {/* Menu item to page content connection - not clickable, desktop only */}
+      {menuToPageWire && !isMobile && (
         <AnimatedLine
           points={menuToPageWire}
           lineWidth={0.5}

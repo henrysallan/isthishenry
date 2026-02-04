@@ -18,11 +18,11 @@
 }
 
 .rectangle-stroke {
-  pointer-events: all;
   stroke-dasharray: 700;
   stroke-dashoffset: 700;
   /* stroke-dasharray updated dynamically in JS based on perimeter */
   /* No transitions - handled by JS lerp */
+  /* pointer-events controlled via inline style based on dismiss state */
 }
 
 /* Bezier system styles */
@@ -40,4 +40,79 @@
 
 .bezier-point-group circle:active {
   cursor: grabbing;
+}
+
+/* Bezier point count slider */
+.bezier-slider-container {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.bezier-slider-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.5;
+  min-width: 16px;
+  text-align: right;
+}
+
+.bezier-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 1px;
+  background: var(--slider-color, #1a1a1a);
+  opacity: 0.3;
+  outline: none;
+  cursor: none;
+  transition: opacity 0.2s ease;
+}
+
+.bezier-slider:hover {
+  opacity: 0.5;
+}
+
+/* Webkit (Chrome, Safari, newer Edge) */
+.bezier-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 0.5px solid var(--slider-color, #1a1a1a);
+  cursor: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.bezier-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  background: rgba(26, 26, 26, 0.1);
+}
+
+/* Firefox */
+.bezier-slider::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 0.5px solid var(--slider-color, #1a1a1a);
+  cursor: none;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.bezier-slider::-moz-range-thumb:hover {
+  transform: scale(1.3);
+}
+
+.bezier-slider::-moz-range-track {
+  height: 1px;
+  background: var(--slider-color, #1a1a1a);
 }

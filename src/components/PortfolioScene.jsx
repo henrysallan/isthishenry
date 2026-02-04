@@ -143,10 +143,10 @@ function CameraSetup({ cameraOffsetX, cameraOffsetY }) {
       const mobileBaseY = cameraOffsetY - 2;
       
       if (expandedSubmenuId) {
-        // Shift camera right significantly to center the submenu
-        // The submenu is positioned at menuDepthSeparation (3.5) to the right of main menu
+        // Shift camera right to show both main menu and submenu
+        // Reduced from 4.2 to show both menus on screen
         gsap.to(camera.position, {
-          x: mobileBaseX + 4.2, // Shift right to center submenu
+          x: mobileBaseX + 2.5, // Shift right less to keep both menus visible
           y: mobileBaseY,
           z: 10,
           duration: theme.animation.duration,
@@ -194,6 +194,14 @@ function PortfolioScene() {
   const currentTheme = useNavigationStore(state => state.currentTheme);
   const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
   const activeColors = colorThemes[currentTheme];
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // Leva controls for camera offset
   const { cameraOffsetX, cameraOffsetY } = useControls('Camera', {
@@ -211,7 +219,7 @@ function PortfolioScene() {
       <CameraSetup cameraOffsetX={cameraOffsetX} cameraOffsetY={cameraOffsetY} />
       <color attach="background" args={[bgColor]} />
       <ambientLight intensity={1} />
-      <BackgroundDots color={dotsColor} />
+      {!isMobile && <BackgroundDots color={dotsColor} />}
       <MenuSystem />
       <ConnectionWires />
       <DrawableLine />

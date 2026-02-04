@@ -18,6 +18,10 @@ export const useNavigationStore = create((set, get) => ({
   isHoveringLogo: false, // Track if hovering over logo letters
   currentTheme: 'classic', // Active color theme
   isThemeInverted: getSystemDarkModePreference(), // Initialize based on system preference
+  isLandingDismissed: false, // Track if landing page has been dismissed
+  
+  // Landing page actions
+  setLandingDismissed: (isDismissed) => set({ isLandingDismissed: isDismissed }),
   
   // Set logo hover state
   setIsHoveringLogo: (isHovering) => set({ isHoveringLogo: isHovering }),

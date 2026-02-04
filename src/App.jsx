@@ -5,6 +5,7 @@ import PortfolioScene from './components/PortfolioScene';
 import ContentArea from './components/ContentArea';
 import CustomCursor from './components/CustomCursor';
 import LandingOverlay from './components/LandingOverlay';
+import ReturnArrow from './components/ReturnArrow';
 import HomeTextOverlay from './components/HomeTextOverlay';
 import ColorPicker from './components/ColorPicker';
 // import WebcamSphere from './components/WebcamSphere';
@@ -14,7 +15,6 @@ import { preloadAllAssets } from './utils/preloader';
 import './App.css';
 
 function App() {
-  const [showOverlay, setShowOverlay] = useState(true);
   const [showLeva, setShowLeva] = useState(false);
   const currentTheme = useNavigationStore(state => state.currentTheme);
   const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
@@ -93,9 +93,8 @@ function App() {
       <CustomCursor />
       <ColorPicker />
       {/* <WebcamSphere /> */}
-      {showOverlay && (
-        <LandingOverlay onComplete={() => setShowOverlay(false)} />
-      )}
+      <LandingOverlay />
+      <ReturnArrow />
     </div>
   );
 }

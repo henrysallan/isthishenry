@@ -362,6 +362,7 @@ function ContentArea() {
   const [isExpanded, setIsExpanded] = useState(false);
   const contentAreaRef = useRef(null);
   const contentInnerRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const previousViewRef = useRef(currentView);
   const previousContentRef = useRef(null);
 
@@ -484,11 +485,10 @@ function ContentArea() {
     if (previousViewRef.current !== currentView && content && contentInnerRef.current) {
       setIsTransitioning(true);
       
-      // Reset scroll position
-      if (contentAreaRef.current) {
-        contentAreaRef.current.scrollTop = 0;
+      // Reset scroll position on the scrollable container
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
       }
-      window.scrollTo(0, 0);
       
       // Pause all videos
       const allVideos = contentInnerRef.current.querySelectorAll('video');
@@ -733,7 +733,7 @@ function ContentArea() {
       />
       {content && (
         <div className="content-slide-wrapper" ref={contentInnerRef}>
-          <div className="content-inner">
+          <div className="content-inner" ref={scrollContainerRef}>
             {renderContent(content, currentView)}
           </div>
         </div>

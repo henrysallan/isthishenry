@@ -2,7 +2,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 10001;
+  z-index: 9997;
   padding: 20px;
   pointer-events: none;
   color: var(--color-text);
@@ -15,7 +15,7 @@
   width: 350px;
   height: 150px;
   pointer-events: auto;
-  z-index: 10002;
+  z-index: 9998;
   overflow: hidden;
 }
 
@@ -23,6 +23,8 @@
   .p5-logo-container {
     top: -8px;
     left: -8px;
+    width: 280px;
+    height: 100px;
   }
 }
 

@@ -81,7 +81,7 @@ export const theme = {
   spatial: {
     // Menu positioning in 3D space
     menuDepthSeparation: 3.5, // Distance between menu levels on X axis
-    menuZOffset: -1.0, // Z depth difference between parent and child menus
+    menuZOffset: 0, // Z depth difference between parent and child menus
     // Camera movement
     cameraXMovement: 2.0, // How far camera moves right
     cameraZMovement: 1.5, // How far camera moves back
@@ -100,8 +100,8 @@ export function getMenuPosition(menuLevel, leftColumnCenter, itemIndex, itemCoun
   const menuHeight = (itemCount - 1) * spacing;
   const startY = menuHeight / 2;
   
-  // Reduce depth separation by 15% on mobile
-  const depthSeparation = isMobile ? theme.spatial.menuDepthSeparation * 0.85 : theme.spatial.menuDepthSeparation;
+  // Reduce X distance between parent and child menus on mobile (50% of desktop)
+  const depthSeparation = isMobile ? theme.spatial.menuDepthSeparation * 0.5 : theme.spatial.menuDepthSeparation;
   
   let x, z;
   switch(menuLevel) {
@@ -111,7 +111,8 @@ export function getMenuPosition(menuLevel, leftColumnCenter, itemIndex, itemCoun
       break;
     case 'submenu':
       x = leftColumnCenter - 0.5 + depthSeparation;
-      z = -theme.spatial.menuZOffset;
+      // On mobile, keep submenu at same z as main menu so it appears same size
+      z = isMobile ? 0 : -theme.spatial.menuZOffset;
       break;
     case 'parent': // Parent label when in submenu
       x = leftColumnCenter - 0.5;

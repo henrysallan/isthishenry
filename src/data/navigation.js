@@ -139,12 +139,15 @@ export const navigationData = {
             videoGallery: {
               columns: 2,
               videos: [
+                'https://cdn.isthishenry.com/Kalshi/FINAL_kalshinba_v06_withwalk.mov',
                 'https://cdn.isthishenry.com/Kalshi/KALSHI_MSG_HSA_V05_1570.mp4',
+                'https://cdn.isthishenry.com/Kalshi/Klashi_desert_comp_v11_SFX_v07_compr_40mb.mp4',
                 'https://cdn.isthishenry.com/Kalshi/MSG2_KALSHI_v06_nozoom.mp4',
                 'https://cdn.isthishenry.com/KalshiStates_Arizona.mov',
                 'https://cdn.isthishenry.com/KalshiStates_Nevada_Harris.mov',
                 'https://cdn.isthishenry.com/Kalshi_sportshere_Dark_v07_1_vertical.mp4',
-                'https://cdn.isthishenry.com/KlashiMapasset2_rendertest_v10_1x1.mov'
+                'https://cdn.isthishenry.com/KlashiMapasset2_rendertest_v10_1x1.mov',
+                
               ]
             }
           }
@@ -196,6 +199,52 @@ export const navigationData = {
             title: 'Modl',
             description: 'Furniture visualization demo',
             videoUrl: 'https://cdn.isthishenry.com/FurnitureDemo_jake_v01.mov'
+          }
+        },
+        {
+          id: 'lattafa',
+          title: 'Lattafa',
+          type: 'page',
+          content: {
+            title: 'Lattafa',
+            description: 'Lattafa, a fragrence company, requested 3D animation to drive the launch of their new fragrances.',
+            thumbnail: 'https://cdn.isthishenry.com/Lattafa/Elixir_comboshot_v01_02.png',
+            mediaGallery: {
+              baseUrl: 'https://cdn.isthishenry.com/Lattafa/',
+              columns: 2,
+              items: [
+                'Banoffi_Shot_05_05_sf_0003_01.png',
+                'Elixir_comboshot_v01_02.png',
+                'Elixir_comboshot_v01_06.png',
+                'Elixir_comboshot_v01_25.png',
+                'Elixir_comboshot_v01_33.png'
+                
+              ]
+            }
+          }
+        },
+        {
+          id: 'michael-m',
+          title: 'Michael M',
+          type: 'page',
+          content: {
+            title: 'Michael M',
+            description: '3D work for Michael M',
+            thumbnail: 'https://cdn.isthishenry.com/Michael%20M/050725_MM_hsa_Floating_Diamonds_V05.png',
+            mediaGallery: {
+              baseUrl: 'https://cdn.isthishenry.com/Michael%20M/',
+              columns: 2,
+              items: [
+                '050725_MM_hsa_Earing_smoke_V06%20(1).mp4',
+                '050725_MM_hsa_Floating_Diamonds_V05.png',
+                '050725_MM_hsa_Floating_Diamonds_V06.png',
+                '050725_MM_hsa_white_shelf_v06%20(1).png',
+                '050725_MM_hsa_white_shelf_v08.png',
+                '050725_MM_hsa_wood_v03.png',
+                '050725_MM_hsa_wood_v04.png',
+                'IMG_6142.png'
+              ]
+            }
           }
         }
       ]

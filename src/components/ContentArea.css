@@ -337,8 +337,8 @@
     top: auto;
     bottom: 8px;
     width: calc(100% - 16px);
-    height: 50vh;
-    max-height: 50vh;
+    height: 50dvh;
+    max-height: 50dvh;
     margin: 0;
     border-radius: 6px;
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
@@ -347,8 +347,8 @@
 
   /* Mobile expanded state - full height, stay full width */
   .content-area.expanded {
-    height: calc(100vh - 16px);
-    max-height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100dvh - 16px);
   }
 
   /* Override desktop expanded styles that narrow the content */

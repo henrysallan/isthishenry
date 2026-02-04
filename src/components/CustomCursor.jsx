@@ -48,8 +48,10 @@ function CustomCursor() {
       const isInteractive = !isP5Canvas && (
                            target.tagName === 'BUTTON' || 
                            target.tagName === 'A' || 
+                           target.tagName === 'INPUT' ||
                            target.closest('button') ||
                            target.closest('a') ||
+                           target.classList.contains('bezier-slider') ||
                            computedCursor === 'pointer' ||
                            computedCursor === 'grab' ||
                            target.style.cursor === 'pointer' ||
