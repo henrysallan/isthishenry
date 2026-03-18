@@ -17,6 +17,27 @@
   font-family: 'Inter', sans-serif;
 }
 
+.preload-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preload-number {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.15);
+  line-height: 1;
+}
+
 body {
   margin: 0;
   padding: 0;

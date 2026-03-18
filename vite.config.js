@@ -7,13 +7,4 @@ export default defineConfig({
   server: {
     host: true, // or '0.0.0.0' to listen on all addresses // Optional: specify a port, default is 5173
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          p5: ['p5'],
-        },
-      },
-    },
-  },
 })

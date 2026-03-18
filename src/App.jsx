@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import P5Menu from './components/P5Menu';
+import P5Menu from './components/P5Menu_canvas';
 import ContentArea from './components/ContentArea';
 import CustomCursor from './components/CustomCursor';
 import LandingOverlay from './components/LandingOverlay';
