@@ -403,11 +403,15 @@ function LazyVideo({ src, poster, aspectRatio }) {
 
     // Set up HLS if needed
     if (isHLS && Hls.isSupported()) {
-      const hls = new Hls({ autoStartLoad: false });
+      const hls = new Hls();
       hlsRef.current = hls;
       hls.attachMedia(video);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
         hls.loadSource(src);
+      });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        // Auto-play once manifest is ready if already in view
+        video.play().catch(() => {});
       });
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
@@ -436,7 +440,6 @@ function LazyVideo({ src, poster, aspectRatio }) {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsInView(true);
-            if (isHLS && hlsRef.current) hlsRef.current.startLoad();
             video.play().catch(() => {});
           } else {
             video.pause();
