@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import gsap from 'gsap';
 import { useNavigationStore } from '../store/navigationStore';
 import { colorThemes } from '../config/theme';
@@ -145,6 +145,10 @@ function LandingOverlay() {
   const bezierSystemRef = useRef(null);
   const bezierPathRef = useRef(null);
   const bezierMaskRectRef = useRef(null);
+  const bezierPointsRef = useRef([]);
+  const bezierDrawProgressRef = useRef(0);
+  const coordGroupRef = useRef(null);
+  const elementCacheRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isDrawn, setIsDrawn] = useState(false);
   const [bezierDrawProgress, setBezierDrawProgress] = useState(0);
@@ -184,7 +188,7 @@ function LandingOverlay() {
   }, []);
   
   // Bezier path state
-  const [numBezierPoints, setNumBezierPoints] = useState(window.innerWidth <= 768 ? 4 : 6);
+  const [numBezierPoints, setNumBezierPoints] = useState(window.innerWidth <= 768 ? 3 : 3);
   const [bezierPoints, setBezierPoints] = useState([]);
   const [dragState, setDragState] = useState({ isDragging: false, pointId: null, handleType: null });
   const [hoveredPoint, setHoveredPoint] = useState({ pointId: null, handleType: null });
@@ -205,6 +209,119 @@ function LandingOverlay() {
   useEffect(() => {
     shockwavesRef.current = shockwaves;
   }, [shockwaves]);
+
+  // Sync bezier state to ref for imperative DOM updates
+  useLayoutEffect(() => {
+    bezierPointsRef.current = bezierPoints.map(p => ({...p}));
+  }, [bezierPoints]);
+
+  useEffect(() => {
+    bezierDrawProgressRef.current = bezierDrawProgress;
+  }, [bezierDrawProgress]);
+
+  // Build element cache for direct DOM manipulation (avoids querySelectorAll per frame)
+  const buildElementCache = () => {
+    if (!bezierSystemRef.current) return;
+    const cursorLines = Array.from(bezierSystemRef.current.querySelectorAll('.cursor-to-bezier-line'));
+    const groups = Array.from(bezierSystemRef.current.querySelectorAll('.bezier-point-group'));
+    const coordTexts = coordGroupRef.current ? Array.from(coordGroupRef.current.querySelectorAll('text')) : [];
+    elementCacheRef.current = {
+      cursorLines,
+      pointGroups: groups.map(g => {
+        const c = g.children;
+        return {
+          handleLine1: c[0], handleLine2: c[1],
+          h1Hit: c[2], h1Visible: c[3],
+          h2Hit: c[4], h2Visible: c[5],
+          anchorHit: c[6], anchorVisible: c[7],
+          label: c[8],
+        };
+      }),
+      coordTexts,
+    };
+  };
+
+  // Direct DOM update for bezier elements (bypasses React re-renders)
+  const updateBezierDOM = () => {
+    const cache = elementCacheRef.current;
+    const points = bezierPointsRef.current;
+    const progress = bezierDrawProgressRef.current;
+    if (!cache || points.length === 0) return;
+
+    // Update bezier path
+    if (bezierPathRef.current && points.length >= 2) {
+      let pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 0; i < points.length - 1; i++) {
+        pathD += ` C ${points[i].h2x} ${points[i].h2y}, ${points[i+1].h1x} ${points[i+1].h1y}, ${points[i+1].x} ${points[i+1].y}`;
+      }
+      const last = points[points.length - 1];
+      const first = points[0];
+      pathD += ` C ${last.h2x} ${last.h2y}, ${first.h1x} ${first.h1y}, ${first.x} ${first.y}`;
+      bezierPathRef.current.setAttribute('d', pathD);
+      bezierPathRef.current.setAttribute('fill-opacity', String(0.03 * progress));
+      bezierPathRef.current.setAttribute('stroke-opacity', String(0.5 * progress));
+    }
+
+    // Update each point group
+    for (let i = 0; i < cache.pointGroups.length; i++) {
+      const p = points[i];
+      if (!p) continue;
+      const g = cache.pointGroups[i];
+      // Handle lines
+      g.handleLine1.setAttribute('x1', p.x); g.handleLine1.setAttribute('y1', p.y);
+      g.handleLine1.setAttribute('x2', p.x + (p.h1x - p.x) * progress);
+      g.handleLine1.setAttribute('y2', p.y + (p.h1y - p.y) * progress);
+      g.handleLine1.setAttribute('stroke-opacity', String(0.5 * progress));
+      g.handleLine2.setAttribute('x1', p.x); g.handleLine2.setAttribute('y1', p.y);
+      g.handleLine2.setAttribute('x2', p.x + (p.h2x - p.x) * progress);
+      g.handleLine2.setAttribute('y2', p.y + (p.h2y - p.y) * progress);
+      g.handleLine2.setAttribute('stroke-opacity', String(0.5 * progress));
+      // H1 circles
+      g.h1Hit.setAttribute('cx', p.h1x); g.h1Hit.setAttribute('cy', p.h1y);
+      g.h1Visible.setAttribute('cx', p.h1x); g.h1Visible.setAttribute('cy', p.h1y);
+      // H2 circles
+      g.h2Hit.setAttribute('cx', p.h2x); g.h2Hit.setAttribute('cy', p.h2y);
+      g.h2Visible.setAttribute('cx', p.h2x); g.h2Visible.setAttribute('cy', p.h2y);
+      // Anchor circles
+      g.anchorHit.setAttribute('cx', p.x); g.anchorHit.setAttribute('cy', p.y);
+      g.anchorVisible.setAttribute('cx', p.x); g.anchorVisible.setAttribute('cy', p.y);
+      // Label
+      g.label.setAttribute('x', p.x + 10); g.label.setAttribute('y', p.y - 10);
+      g.label.setAttribute('fill-opacity', String(0.6 * progress));
+    }
+
+    // Update cursor-to-bezier lines
+    for (let i = 0; i < cache.cursorLines.length; i++) {
+      const p = points[i];
+      if (!p) continue;
+      const line = cache.cursorLines[i];
+      line.setAttribute('x2', p.x);
+      line.setAttribute('y2', p.y);
+      const dx = mousePosRef.current.x - p.x;
+      const dy = mousePosRef.current.y - p.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const maxDistance = 300;
+      const opacity = distance < maxDistance ? (1 - distance / maxDistance) * 0.25 * progress : 0;
+      line.setAttribute('stroke-opacity', opacity);
+    }
+
+    // Update coordinate texts
+    for (let i = 0; i < cache.coordTexts.length; i++) {
+      const p = points[i];
+      if (!p) continue;
+      cache.coordTexts[i].textContent = `${String.fromCharCode(65 + i)}: (${p.x.toFixed(4)}, ${p.y.toFixed(4)})`;
+    }
+  };
+
+  // Rebuild element cache when structure changes
+  useLayoutEffect(() => {
+    buildElementCache();
+  }, [bezierPoints.length, isMobile]);
+
+  // Re-apply DOM positions after React re-renders to prevent stale state flicker
+  useLayoutEffect(() => {
+    updateBezierDOM();
+  });
 
   // Accelerometer data ref for mobile
   const accelerometerRef = useRef({ x: 0, y: 0 });
@@ -294,9 +411,9 @@ function LandingOverlay() {
     }
   }, [isMobile]);
 
-  // Noise-based drift animation for bezier points
+  // Noise-based drift animation for bezier points (ref-based, no React state updates)
   useEffect(() => {
-    if (bezierPoints.length === 0) return;
+    if (bezierPointsRef.current.length === 0) return;
     
     const driftSpeed = 0.0002; // Very slow drift
     const driftAmount = 150; // Max pixels to drift
@@ -307,7 +424,6 @@ function LandingOverlay() {
     const shockwaveWidth = 60; // Wider ring for smoother effect
     const velocityDecay = 0.96; // Friction - velocity multiplied by this each frame
     let startTime = Date.now();
-    let frameCount = 0;
     
     const animateDrift = () => {
       // Skip updates during animations to prevent jitter
@@ -316,143 +432,129 @@ function LandingOverlay() {
         return;
       }
       
-      frameCount++;
-      // Only update state every 3 frames to reduce re-renders
-      if (frameCount % 3 !== 0) {
-        bezierDriftRef.current = requestAnimationFrame(animateDrift);
-        return;
+      const elapsed = (Date.now() - startTime) * driftSpeed;
+      const points = bezierPointsRef.current;
+      
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const vx = p.vx || 0;
+        const vy = p.vy || 0;
+        
+        // If this specific point is being dragged or hovered, freeze it
+        const isDragged = dragStateRef.current.isDragging && dragStateRef.current.pointId === p.id;
+        const isPointHovered = hoveredPointRef.current.pointId === p.id;
+        
+        if (isDragged || isPointHovered) {
+          p.vx = 0;
+          p.vy = 0;
+          continue;
+        }
+        
+        // Calculate shockwave push force (accumulate into velocity)
+        let pushX = 0;
+        let pushY = 0;
+        
+        // Add accelerometer force on mobile
+        pushX += accelerometerRef.current.x;
+        pushY += accelerometerRef.current.y;
+        
+        shockwavesRef.current.forEach(sw => {
+          const dx = p.x - sw.x;
+          const dy = p.y - sw.y;
+          const distToPoint = Math.sqrt(dx * dx + dy * dy);
+          
+          const innerRadius = sw.radius - shockwaveWidth / 2;
+          const outerRadius = sw.radius + shockwaveWidth / 2;
+          
+          if (distToPoint >= innerRadius && distToPoint <= outerRadius && distToPoint > 0) {
+            const ringCenter = sw.radius;
+            const distFromRingCenter = Math.abs(distToPoint - ringCenter);
+            const ringFalloff = 1 - (distFromRingCenter / (shockwaveWidth / 2));
+            
+            const pushStrength = shockwavePushForce * ringFalloff * (1 - sw.radius / sw.maxRadius);
+            pushX += (dx / distToPoint) * pushStrength;
+            pushY += (dy / distToPoint) * pushStrength;
+          }
+        });
+        
+        // Update velocity with push force and apply decay
+        let newVx = (vx + pushX) * velocityDecay;
+        let newVy = (vy + pushY) * velocityDecay;
+        
+        // Screen edge collision detection
+        const padding = 30;
+        const bounce = 0.6;
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        
+        if (p.x < padding) {
+          newVx = Math.abs(newVx) * bounce;
+        } else if (p.x > screenWidth - padding) {
+          newVx = -Math.abs(newVx) * bounce;
+        }
+        
+        if (p.y < padding) {
+          newVy = Math.abs(newVy) * bounce;
+        } else if (p.y > screenHeight - padding) {
+          newVy = -Math.abs(newVy) * bounce;
+        }
+        
+        // Generate noise values for anchor point position
+        const noiseX = noise(p.noiseOffsetX + elapsed, 0) * driftAmount;
+        const noiseY = noise(0, p.noiseOffsetY + elapsed) * driftAmount;
+        
+        // Calculate base handle angle and distance from anchor
+        const baseH1dx = p.baseH1x - p.baseX;
+        const baseH1dy = p.baseH1y - p.baseY;
+        const baseAngle = Math.atan2(baseH1dy, baseH1dx);
+        const baseDistance = Math.sqrt(baseH1dx * baseH1dx + baseH1dy * baseH1dy);
+        
+        // Generate noise for handle angle and distance
+        const angleNoise = noise(p.noiseOffsetX + 500 + elapsed, 100) * handleAngleDrift;
+        const distanceNoise = noise(100, p.noiseOffsetY + 500 + elapsed) * handleDistanceDrift;
+        
+        const driftedAngle = baseAngle + angleNoise;
+        const driftedDistance = baseDistance + distanceNoise;
+        
+        // Calculate target handle positions (h1 and h2 are always opposite)
+        const targetX = p.baseX + noiseX;
+        const targetY = p.baseY + noiseY;
+        const targetH1x = targetX + Math.cos(driftedAngle) * driftedDistance;
+        const targetH1y = targetY + Math.sin(driftedAngle) * driftedDistance;
+        const targetH2x = targetX - Math.cos(driftedAngle) * driftedDistance;
+        const targetH2y = targetY - Math.sin(driftedAngle) * driftedDistance;
+        
+        // Calculate new positions
+        let newX = p.x + (targetX - p.x) * lerpFactor + newVx;
+        let newY = p.y + (targetY - p.y) * lerpFactor + newVy;
+        let newBaseX = p.baseX + newVx * 0.3;
+        let newBaseY = p.baseY + newVy * 0.3;
+        
+        // Clamp positions to screen bounds
+        newX = Math.max(padding, Math.min(screenWidth - padding, newX));
+        newY = Math.max(padding, Math.min(screenHeight - padding, newY));
+        newBaseX = Math.max(padding, Math.min(screenWidth - padding, newBaseX));
+        newBaseY = Math.max(padding, Math.min(screenHeight - padding, newBaseY));
+        
+        // Mutate ref directly instead of creating new objects via setState
+        p.vx = newVx;
+        p.vy = newVy;
+        p.x = newX;
+        p.y = newY;
+        p.h1x = p.h1x + (targetH1x - p.h1x) * lerpFactor + newVx;
+        p.h1y = p.h1y + (targetH1y - p.h1y) * lerpFactor + newVy;
+        p.h2x = p.h2x + (targetH2x - p.h2x) * lerpFactor + newVx;
+        p.h2y = p.h2y + (targetH2y - p.h2y) * lerpFactor + newVy;
+        p.baseX = newBaseX;
+        p.baseY = newBaseY;
+        p.baseH1x = p.baseH1x + newVx * 0.3;
+        p.baseH1y = p.baseH1y + newVy * 0.3;
+        p.baseH2x = p.baseH2x + newVx * 0.3;
+        p.baseH2y = p.baseH2y + newVy * 0.3;
       }
       
-      const elapsed = (Date.now() - startTime) * driftSpeed;
-      
-      setBezierPoints(prev => {
-        return prev.map(p => {
-          // Initialize velocity if not present
-          const vx = p.vx || 0;
-          const vy = p.vy || 0;
-          
-          // If this specific point is being dragged or hovered, freeze it
-          const isDragged = dragStateRef.current.isDragging && dragStateRef.current.pointId === p.id;
-          const isHovered = hoveredPointRef.current.pointId === p.id;
-          
-          if (isDragged || isHovered) {
-            return { ...p, vx: 0, vy: 0 }; // Reset velocity when frozen
-          }
-          
-          // Calculate shockwave push force (accumulate into velocity)
-          let pushX = 0;
-          let pushY = 0;
-          
-          // Add accelerometer force on mobile
-          pushX += accelerometerRef.current.x;
-          pushY += accelerometerRef.current.y;
-          
-          shockwavesRef.current.forEach(sw => {
-            const dx = p.x - sw.x;
-            const dy = p.y - sw.y;
-            const distToPoint = Math.sqrt(dx * dx + dy * dy);
-            
-            // Check if point is within the shockwave ring
-            const innerRadius = sw.radius - shockwaveWidth / 2;
-            const outerRadius = sw.radius + shockwaveWidth / 2;
-            
-            if (distToPoint >= innerRadius && distToPoint <= outerRadius && distToPoint > 0) {
-              // Calculate how centered in the ring (1 at center, 0 at edges)
-              const ringCenter = sw.radius;
-              const distFromRingCenter = Math.abs(distToPoint - ringCenter);
-              const ringFalloff = 1 - (distFromRingCenter / (shockwaveWidth / 2));
-              
-              // Calculate push direction (away from shockwave center)
-              const pushStrength = shockwavePushForce * ringFalloff * (1 - sw.radius / sw.maxRadius);
-              pushX += (dx / distToPoint) * pushStrength;
-              pushY += (dy / distToPoint) * pushStrength;
-            }
-          });
-          
-          // Update velocity with push force and apply decay
-          let newVx = (vx + pushX) * velocityDecay;
-          let newVy = (vy + pushY) * velocityDecay;
-          
-          // Screen edge collision detection
-          const padding = 30; // Keep points this far from edges
-          const bounce = 0.6; // Bounce factor (0-1, lower = less bouncy)
-          const screenWidth = window.innerWidth;
-          const screenHeight = window.innerHeight;
-          
-          // Check horizontal boundaries
-          if (p.x < padding) {
-            newVx = Math.abs(newVx) * bounce; // Bounce right
-          } else if (p.x > screenWidth - padding) {
-            newVx = -Math.abs(newVx) * bounce; // Bounce left
-          }
-          
-          // Check vertical boundaries
-          if (p.y < padding) {
-            newVy = Math.abs(newVy) * bounce; // Bounce down
-          } else if (p.y > screenHeight - padding) {
-            newVy = -Math.abs(newVy) * bounce; // Bounce up
-          }
-          
-          // Generate noise values for anchor point position
-          const noiseX = noise(p.noiseOffsetX + elapsed, 0) * driftAmount;
-          const noiseY = noise(0, p.noiseOffsetY + elapsed) * driftAmount;
-          
-          // Calculate base handle angle and distance from anchor
-          const baseH1dx = p.baseH1x - p.baseX;
-          const baseH1dy = p.baseH1y - p.baseY;
-          const baseAngle = Math.atan2(baseH1dy, baseH1dx);
-          const baseDistance = Math.sqrt(baseH1dx * baseH1dx + baseH1dy * baseH1dy);
-          
-          // Generate noise for handle angle and distance (same noise affects both handles symmetrically)
-          const angleNoise = noise(p.noiseOffsetX + 500 + elapsed, 100) * handleAngleDrift;
-          const distanceNoise = noise(100, p.noiseOffsetY + 500 + elapsed) * handleDistanceDrift;
-          
-          // Calculate drifted angle and distance
-          const driftedAngle = baseAngle + angleNoise;
-          const driftedDistance = baseDistance + distanceNoise;
-          
-          // Calculate target handle positions (h1 and h2 are always opposite)
-          const targetX = p.baseX + noiseX;
-          const targetY = p.baseY + noiseY;
-          const targetH1x = targetX + Math.cos(driftedAngle) * driftedDistance;
-          const targetH1y = targetY + Math.sin(driftedAngle) * driftedDistance;
-          const targetH2x = targetX - Math.cos(driftedAngle) * driftedDistance;
-          const targetH2y = targetY - Math.sin(driftedAngle) * driftedDistance;
-          
-          // Calculate new positions
-          let newX = p.x + (targetX - p.x) * lerpFactor + newVx;
-          let newY = p.y + (targetY - p.y) * lerpFactor + newVy;
-          let newBaseX = p.baseX + newVx * 0.3;
-          let newBaseY = p.baseY + newVy * 0.3;
-          
-          // Clamp positions to screen bounds
-          newX = Math.max(padding, Math.min(screenWidth - padding, newX));
-          newY = Math.max(padding, Math.min(screenHeight - padding, newY));
-          newBaseX = Math.max(padding, Math.min(screenWidth - padding, newBaseX));
-          newBaseY = Math.max(padding, Math.min(screenHeight - padding, newBaseY));
-          
-          // Lerp current positions toward targets, plus apply velocity
-          return {
-            ...p,
-            vx: newVx,
-            vy: newVy,
-            x: newX,
-            y: newY,
-            h1x: p.h1x + (targetH1x - p.h1x) * lerpFactor + newVx,
-            h1y: p.h1y + (targetH1y - p.h1y) * lerpFactor + newVy,
-            h2x: p.h2x + (targetH2x - p.h2x) * lerpFactor + newVx,
-            h2y: p.h2y + (targetH2y - p.h2y) * lerpFactor + newVy,
-            // Also push the base positions so the point doesn't snap back immediately
-            baseX: newBaseX,
-            baseY: newBaseY,
-            baseH1x: p.baseH1x + newVx * 0.3,
-            baseH1y: p.baseH1y + newVy * 0.3,
-            baseH2x: p.baseH2x + newVx * 0.3,
-            baseH2y: p.baseH2y + newVy * 0.3,
-          };
-        });
-      });
-      
+      // Update DOM directly instead of triggering React re-render
+      updateBezierDOM();
       bezierDriftRef.current = requestAnimationFrame(animateDrift);
     };
     
@@ -584,7 +686,7 @@ function LandingOverlay() {
     gsap.to(targetSizeRef.current, {
       width: expandSize,
       height: expandSize,
-      duration: 0.8,
+      duration: 0.5,
       ease: 'power2.inOut',
       onUpdate: () => {
         if (!rectangleRef.current || !cutoutRef.current) return;
@@ -660,7 +762,7 @@ function LandingOverlay() {
         // Fade out the overlay and mark as dismissed
         gsap.to(container, {
           opacity: 0,
-          duration: 0.3,
+          duration: 0.15,
           ease: 'power1.out',
           onComplete: () => {
             setLandingDismissed(true);
@@ -895,11 +997,11 @@ function LandingOverlay() {
         // First animate the stroke drawing in
         gsap.to(rectangleRef.current, {
           strokeDashoffset: 0,
-          duration: 1.2,
+          duration: 0.6,
           ease: 'power4.inOut'
         });
         
-        // Start the cutout opacity after 900ms
+        // Start the cutout opacity after stroke draws
         setTimeout(() => {
           if (cutoutRef.current) {
             cutoutRef.current.style.opacity = '1';
@@ -909,7 +1011,7 @@ function LandingOverlay() {
           // Animate bezier system drawing in
           gsap.to({ progress: 0 }, {
             progress: 1,
-            duration: 1.5,
+            duration: 0.8,
             ease: 'power2.out',
             onUpdate: function() {
               setBezierDrawProgress(this.targets()[0].progress);
@@ -925,9 +1027,9 @@ function LandingOverlay() {
               }
             }
           });
-        }, 900);
+        }, 400);
       }
-    }, 500); // Small delay before drawing starts
+    }, 200); // Small delay before drawing starts
 
     return () => clearTimeout(drawTimer);
   }, []);
@@ -1167,7 +1269,7 @@ function LandingOverlay() {
     e.stopPropagation();
     e.preventDefault();
     
-    const point = bezierPoints.find(p => p.id === pointId);
+    const point = bezierPointsRef.current.find(p => p.id === pointId);
     if (!point) return;
     
     // Get client coordinates from mouse or touch event
@@ -1205,7 +1307,7 @@ function LandingOverlay() {
     };
     
     setDragState({ isDragging: true, pointId, handleType });
-  }, [bezierPoints]);
+  }, []);
 
   useEffect(() => {
     if (!dragState.isDragging) return;
@@ -1219,80 +1321,63 @@ function LandingOverlay() {
         wasDraggingRef.current = true;
       }
       
-      setBezierPoints(prev => prev.map(p => {
-        if (p.id !== dragState.pointId) return p;
+      // Mutate ref directly instead of setState for performance
+      const points = bezierPointsRef.current;
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        if (p.id !== dragState.pointId) continue;
         
         if (dragState.handleType === 'h1') {
-          // Dragging handle 1 - mirror to handle 2 (fixed angle, fixed distance)
           const newH1x = dragStartRef.current.pointX + dx;
           const newH1y = dragStartRef.current.pointY + dy;
-          
-          // Calculate distance from current anchor to new handle position
           const handleDx = newH1x - p.x;
           const handleDy = newH1y - p.y;
-          
-          // Mirror handle 2 to opposite side at same distance
-          return {
-            ...p,
-            h1x: newH1x,
-            h1y: newH1y,
-            h2x: p.x - handleDx,
-            h2y: p.y - handleDy,
-            // Update base positions so drift continues from new position
-            baseH1x: newH1x,
-            baseH1y: newH1y,
-            baseH2x: p.x - handleDx,
-            baseH2y: p.y - handleDy,
-          };
+          p.h1x = newH1x;
+          p.h1y = newH1y;
+          p.h2x = p.x - handleDx;
+          p.h2y = p.y - handleDy;
+          p.baseH1x = newH1x;
+          p.baseH1y = newH1y;
+          p.baseH2x = p.x - handleDx;
+          p.baseH2y = p.y - handleDy;
         } else if (dragState.handleType === 'h2') {
-          // Dragging handle 2 - mirror to handle 1 (fixed angle, fixed distance)
           const newH2x = dragStartRef.current.pointX + dx;
           const newH2y = dragStartRef.current.pointY + dy;
-          
-          // Calculate distance from current anchor to new handle position
           const handleDx = newH2x - p.x;
           const handleDy = newH2y - p.y;
-          
-          // Mirror handle 1 to opposite side at same distance
-          return {
-            ...p,
-            h2x: newH2x,
-            h2y: newH2y,
-            h1x: p.x - handleDx,
-            h1y: p.y - handleDy,
-            // Update base positions so drift continues from new position
-            baseH2x: newH2x,
-            baseH2y: newH2y,
-            baseH1x: p.x - handleDx,
-            baseH1y: p.y - handleDy,
-          };
+          p.h2x = newH2x;
+          p.h2y = newH2y;
+          p.h1x = p.x - handleDx;
+          p.h1y = p.y - handleDy;
+          p.baseH2x = newH2x;
+          p.baseH2y = newH2y;
+          p.baseH1x = p.x - handleDx;
+          p.baseH1y = p.y - handleDy;
         } else {
-          // Dragging main anchor point - move handles with it
           const newX = dragStartRef.current.pointX + dx;
           const newY = dragStartRef.current.pointY + dy;
           const newH1x = dragStartRef.current.h1x + dx;
           const newH1y = dragStartRef.current.h1y + dy;
           const newH2x = dragStartRef.current.h2x + dx;
           const newH2y = dragStartRef.current.h2y + dy;
-          
-          return {
-            ...p,
-            x: newX,
-            y: newY,
-            h1x: newH1x,
-            h1y: newH1y,
-            h2x: newH2x,
-            h2y: newH2y,
-            // Update base positions so drift continues from new position
-            baseX: newX,
-            baseY: newY,
-            baseH1x: newH1x,
-            baseH1y: newH1y,
-            baseH2x: newH2x,
-            baseH2y: newH2y,
-          };
+          p.x = newX;
+          p.y = newY;
+          p.h1x = newH1x;
+          p.h1y = newH1y;
+          p.h2x = newH2x;
+          p.h2y = newH2y;
+          p.baseX = newX;
+          p.baseY = newY;
+          p.baseH1x = newH1x;
+          p.baseH1y = newH1y;
+          p.baseH2x = newH2x;
+          p.baseH2y = newH2y;
         }
-      }));
+        break;
+      }
+      
+      // Update DOM directly
+      updateBezierDOM();
     };
     
     const handleMouseMove = (e) => {
@@ -1307,6 +1392,8 @@ function LandingOverlay() {
     };
     
     const handleEnd = () => {
+      // Sync ref positions to state on drag end
+      setBezierPoints(bezierPointsRef.current.map(p => ({...p})));
       setDragState({ isDragging: false, pointId: null, handleType: null });
     };
     
@@ -1403,12 +1490,13 @@ function LandingOverlay() {
           <div
             xmlns="http://www.w3.org/1999/xhtml"
             style={{
-              padding: '24px',
+              padding: '10px',
+              marginTop: '5px',
               maxWidth: '600px',
               fontFamily: "'Inter Bold', Inter, sans-serif",
               fontWeight: 700,
               fontSize: isMobile ? '33px' : '48px',
-              lineHeight: 1.1,
+              lineHeight: 1,
               color: strokeColor,
               wordWrap: 'break-word',
               overflowWrap: 'break-word',
@@ -1510,7 +1598,7 @@ function LandingOverlay() {
           x={centerPos.x + driftPosRef.current.x}
           y={centerPos.y - 75 + driftPosRef.current.y - 10}
           textAnchor="middle"
-          fontFamily="'IBM Plex Mono', monospace"
+          fontFamily="'Inter', sans-serif"
           fontWeight="400"
           fontSize="12"
           fill={strokeColor}
@@ -1552,9 +1640,8 @@ function LandingOverlay() {
           />
         </g>
 
-        {/* Screen corner brackets */}
-        <g className="screen-corners" mask="url(#cutoutMask)">
-          {/* Top-left */}
+        {/* Screen corner brackets - hidden */}
+        {/* <g className="screen-corners" mask="url(#cutoutMask)">
           <path
             d={`M ${screenCornerInset} ${screenCornerInset + screenCornerLength} L ${screenCornerInset} ${screenCornerInset} L ${screenCornerInset + screenCornerLength} ${screenCornerInset}`}
             fill="none"
@@ -1562,7 +1649,6 @@ function LandingOverlay() {
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
-          {/* Top-right */}
           <path
             d={`M ${windowSize.width - screenCornerInset - screenCornerLength} ${screenCornerInset} L ${windowSize.width - screenCornerInset} ${screenCornerInset} L ${windowSize.width - screenCornerInset} ${screenCornerInset + screenCornerLength}`}
             fill="none"
@@ -1570,7 +1656,6 @@ function LandingOverlay() {
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
-          {/* Bottom-right */}
           <path
             d={`M ${windowSize.width - screenCornerInset} ${windowSize.height - screenCornerInset - screenCornerLength} L ${windowSize.width - screenCornerInset} ${windowSize.height - screenCornerInset} L ${windowSize.width - screenCornerInset - screenCornerLength} ${windowSize.height - screenCornerInset}`}
             fill="none"
@@ -1578,7 +1663,6 @@ function LandingOverlay() {
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
-          {/* Bottom-left */}
           <path
             d={`M ${screenCornerInset + screenCornerLength} ${windowSize.height - screenCornerInset} L ${screenCornerInset} ${windowSize.height - screenCornerInset} L ${screenCornerInset} ${windowSize.height - screenCornerInset - screenCornerLength}`}
             fill="none"
@@ -1586,7 +1670,7 @@ function LandingOverlay() {
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
-        </g>
+        </g> */}
 
         {/* Interactive Bezier Path System */}
         <g ref={bezierSystemRef} className="bezier-system" mask="url(#bezierMask)">
@@ -1745,7 +1829,7 @@ function LandingOverlay() {
               <text
                 x={point.x + 10}
                 y={point.y - 10}
-                fontFamily="'IBM Plex Mono', monospace"
+                fontFamily="'Inter', sans-serif"
                 fontWeight="400"
                 fontSize="9"
                 fill={strokeColor}
@@ -1775,14 +1859,14 @@ function LandingOverlay() {
         ))}
 
         {/* Coordinate display in bottom right corner */}
-        <g style={{ pointerEvents: 'none' }}>
+        <g ref={coordGroupRef} style={{ pointerEvents: 'none' }}>
           {bezierPoints.map((point, index) => (
             <text
               key={`coord-${point.id}`}
               x={windowSize.width - 24}
               y={windowSize.height - 24 - (bezierPoints.length - 1 - index) * 16}
               textAnchor="end"
-              fontFamily="'IBM Plex Mono', monospace"
+              fontFamily="'Inter', sans-serif"
               fontWeight="400"
               fontSize="10"
               fill={strokeColor}

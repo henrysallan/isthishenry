@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 
-// Detect system dark mode preference
-const getSystemDarkModePreference = () => {
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-  return false; // Default to light mode if can't detect
-};
+// Always use light mode (classic theme)
 
 export const useNavigationStore = create((set, get) => ({
   // Current view state - start on home page
@@ -17,7 +11,7 @@ export const useNavigationStore = create((set, get) => ({
   isHoveringMenuItem: false, // Track if hovering over any menu item
   isHoveringLogo: false, // Track if hovering over logo letters
   currentTheme: 'classic', // Active color theme
-  isThemeInverted: getSystemDarkModePreference(), // Initialize based on system preference
+  isThemeInverted: false, // Always light mode
   isLandingDismissed: false, // Track if landing page has been dismissed
   
   // Landing page actions
@@ -112,7 +106,7 @@ export const useNavigationStore = create((set, get) => ({
   // Check if back button should be visible
   canGoBack: () => {
     const state = get();
-    return state.currentView !== 'home';
+    return state.currentView !== 'home' || state.expandedSubmenuId !== null;
   },
   
   setHoveringMenuItem: (isHovering) => set({

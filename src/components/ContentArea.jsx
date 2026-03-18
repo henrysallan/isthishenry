@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
 import { theme } from '../config/theme';
@@ -6,7 +6,126 @@ import { R2Video, getR2VideoUrl } from '../utils/videoStreaming';
 import VideoPlayer from './VideoPlayer';
 import LoadingSpinner from './LoadingSpinner';
 import gsap from 'gsap';
+import Hls from 'hls.js';
 import './ContentArea.css';
+
+// Collect all video URLs from navigation data for the about page showcase
+function collectAllVideoUrls() {
+  const urls = [];
+  const walk = (items) => {
+    if (!items) return;
+    for (const item of items) {
+      const content = item.content;
+      if (content?.blocks) {
+        const baseUrl = content.baseUrl || '';
+        for (const block of content.blocks) {
+          if (block.type === 'video') {
+            const src = block.src.startsWith('http') ? block.src : `${baseUrl}${block.src}`;
+            urls.push(src);
+          }
+        }
+      }
+      if (item.submenu) walk(item.submenu);
+    }
+  };
+  walk(navigationData.mainMenu);
+  return urls;
+}
+
+const ALL_VIDEO_URLS = collectAllVideoUrls();
+
+// Shuffles array in place (Fisher-Yates)
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const CYCLE_INTERVAL = 6000; // ms between video swaps
+
+// A single about-page media slot that cycles through random project videos
+function AboutMediaSlot({ slotIndex }) {
+  const [shuffled] = useState(() => {
+    const s = shuffle(ALL_VIDEO_URLS);
+    if (slotIndex === 1) {
+      const half = Math.floor(s.length / 2);
+      return [...s.slice(half), ...s.slice(0, half)];
+    }
+    return s;
+  });
+  const indexRef = useRef(0);
+  // Double-buffer: two video elements, swap which is on top
+  const [active, setActive] = useState(0); // 0 or 1
+  const [srcs, setSrcs] = useState([shuffled[0] || '', '']);
+  const videoRefs = [useRef(null), useRef(null)];
+  const timerRef = useRef(null);
+
+  const nextIndex = () => {
+    indexRef.current = (indexRef.current + 1) % shuffled.length;
+    return indexRef.current;
+  };
+
+  // Preload next video into the back buffer, swap when ready
+  const queueNext = useCallback(() => {
+    const next = nextIndex();
+    const backIdx = active === 0 ? 1 : 0;
+    setSrcs(prev => {
+      const copy = [...prev];
+      copy[backIdx] = shuffled[next];
+      return copy;
+    });
+
+    const backVideo = videoRefs[backIdx].current;
+    if (backVideo) {
+      backVideo.load();
+
+      const onReady = () => {
+        backVideo.removeEventListener('canplaythrough', onReady);
+        backVideo.play().catch(() => {});
+        setActive(backIdx);
+      };
+      backVideo.addEventListener('canplaythrough', onReady);
+    }
+  }, [active, shuffled]);
+
+  // Cycle on interval
+  useEffect(() => {
+    if (shuffled.length <= 1) return;
+    timerRef.current = setInterval(queueNext, CYCLE_INTERVAL);
+    return () => clearInterval(timerRef.current);
+  }, [queueNext, shuffled]);
+
+  // Play the initial video
+  useEffect(() => {
+    const v = videoRefs[0].current;
+    if (v) v.play().catch(() => {});
+  }, []);
+
+  return (
+    <div className="about-media-item loaded">
+      <video
+        ref={videoRefs[0]}
+        src={srcs[0]}
+        muted
+        loop
+        playsInline
+        autoPlay
+        className={`about-video-layer ${active === 0 ? 'front' : 'back'}`}
+      />
+      <video
+        ref={videoRefs[1]}
+        src={srcs[1]}
+        muted
+        loop
+        playsInline
+        className={`about-video-layer ${active === 1 ? 'front' : 'back'}`}
+      />
+    </div>
+  );
+}
 
 // Progressive image loading component - shows blur placeholder until loaded
 // Includes retry logic for failed/stalled Cloudflare R2 requests
@@ -128,8 +247,7 @@ function ProgressiveImage({ src, alt, className, onClick }) {
         </div>
       ) : (
         <div className="image-placeholder">
-          <LoadingSpinner size={32} />
-          <span className="loading-percent">{Math.floor(loadProgress)}%</span>
+          <span className="loading-number">{Math.floor(loadProgress)}</span>
         </div>
       )}
     </div>
@@ -172,8 +290,7 @@ function GridImage({ src, alt }) {
     <div className="grid-media-wrapper">
       {!isLoaded && (
         <div className="grid-loading-placeholder">
-          <LoadingSpinner size={32} />
-          <span className="loading-percent">{Math.floor(loadProgress)}%</span>
+          <span className="loading-number">{Math.floor(loadProgress)}</span>
         </div>
       )}
       <img
@@ -223,8 +340,7 @@ function GridVideo({ src }) {
     <div className="grid-media-wrapper">
       {!isLoaded && (
         <div className="grid-loading-placeholder">
-          <LoadingSpinner size={32} />
-          <span className="loading-percent">{Math.floor(loadProgress)}%</span>
+          <span className="loading-number">{Math.floor(loadProgress)}</span>
         </div>
       )}
       <video
@@ -242,8 +358,9 @@ function GridVideo({ src }) {
 
 // Lazy loading video component - only plays when in viewport
 // Includes retry logic for failed Cloudflare R2 requests
-function LazyVideo({ src, poster }) {
+function LazyVideo({ src, poster, aspectRatio }) {
   const videoRef = useRef(null);
+  const hlsRef = useRef(null);
   const [isInView, setIsInView] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -252,6 +369,7 @@ function LazyVideo({ src, poster }) {
   const fakeProgressRef = useRef(null);
   const targetFakeProgress = useRef(Math.floor(Math.random() * 16) + 85);
   const maxRetries = 3;
+  const isHLS = src && src.includes('.m3u8');
 
   // Fake progress animation
   useEffect(() => {
@@ -277,23 +395,46 @@ function LazyVideo({ src, poster }) {
     const video = videoRef.current;
     if (!video) return;
 
+    // Set up HLS if needed
+    if (isHLS && Hls.isSupported()) {
+      const hls = new Hls({ autoStartLoad: false });
+      hlsRef.current = hls;
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        hls.loadSource(src);
+      });
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) handleError();
+      });
+    } else if (isHLS && video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS (Safari)
+      video.src = src;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsInView(true);
+            if (isHLS && hlsRef.current) hlsRef.current.startLoad();
             video.play().catch(() => {});
           } else {
             video.pause();
           }
         });
       },
-      { threshold: 0.3 } // 30% visible to trigger
+      { threshold: 0.3 }
     );
 
     observer.observe(video);
-    return () => observer.disconnect();
-  }, []);
+    return () => {
+      observer.disconnect();
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src]);
 
   // Handle video load errors with retry
   const handleError = () => {
@@ -331,24 +472,81 @@ function LazyVideo({ src, poster }) {
   }
 
   return (
-    <div className={`lazy-video-wrapper ${isLoaded ? 'loaded' : 'loading'}`}>
+    <div className={`lazy-video-wrapper ${isLoaded ? 'loaded' : 'loading'}`} style={aspectRatio ? { aspectRatio, overflow: 'hidden' } : undefined}>
       {!isLoaded && (
         <div className="video-loading-placeholder">
-          <LoadingSpinner size={32} />
-          <span className="loading-percent">{Math.floor(loadProgress)}%</span>
+          <span className="loading-number">{Math.floor(loadProgress)}</span>
         </div>
       )}
       <video
         ref={videoRef}
-        src={videoSrc}
+        src={isHLS ? undefined : videoSrc}
         poster={poster}
         muted
         loop
         playsInline
         preload="metadata"
-        onError={handleError}
+        onError={isHLS ? undefined : handleError}
         onLoadedData={handleLoadedData}
       />
+    </div>
+  );
+}
+
+// Vimeo embed component - no controls, autoplay, loop
+function VimeoEmbed({ src, aspectRatio = '56.25%' }) {
+  // Extract video ID from various Vimeo URL formats
+  const getVimeoId = (url) => {
+    const match = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
+    return match ? match[1] : url;
+  };
+  const videoId = getVimeoId(src);
+  const embedUrl = `https://player.vimeo.com/video/${videoId}?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1`;
+
+  return (
+    <div className="vimeo-embed" style={{ paddingBottom: aspectRatio }}>
+      <iframe
+        src={embedUrl}
+        frameBorder="0"
+        allow="autoplay; fullscreen"
+        allowFullScreen
+        title="Vimeo video"
+      />
+    </div>
+  );
+}
+
+// ── Work list with native scrolling ──
+function WorkList({ items, onItemClick }) {
+  return (
+    <div className="work-list-container">
+      <div className="work-list">
+        {items.map((item) => {
+          const thumbnailSrc = item.content?.thumbnail;
+          const isVideo = thumbnailSrc && (thumbnailSrc.endsWith('.mp4') || thumbnailSrc.endsWith('.mov') || thumbnailSrc.endsWith('.webm'));
+          return (
+            <div
+              key={item.id}
+              className="work-row"
+              onClick={() => onItemClick(item.id)}
+            >
+              <div className="work-row-text">
+                <span className="work-row-title">{item.title}</span>
+                <span className="work-row-tags">{item.content?.tags || ''}</span>
+              </div>
+              <div className="work-row-thumb">
+                {thumbnailSrc && (
+                  isVideo ? (
+                    <video src={thumbnailSrc} muted loop playsInline autoPlay />
+                  ) : (
+                    <img src={thumbnailSrc} alt={item.title} />
+                  )
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -359,98 +557,11 @@ function ContentArea() {
   const [parentSubmenu, setParentSubmenu] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(false);
   const contentAreaRef = useRef(null);
   const contentInnerRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const previousViewRef = useRef(currentView);
   const previousContentRef = useRef(null);
-
-  // Handle expand/collapse animation
-  const toggleExpand = () => {
-    const contentArea = contentAreaRef.current;
-    if (!contentArea) return;
-
-    // Check if mobile
-    const isMobile = window.innerWidth <= 768;
-
-    // Get current computed values to animate from
-    const currentLeft = parseFloat(getComputedStyle(contentArea).left);
-    const currentWidth = parseFloat(getComputedStyle(contentArea).width);
-    
-    // Get all content elements that need to animate
-    const contentElements = contentArea.querySelectorAll('.video-container:not(.full-bleed), .image-gallery, .video-gallery, .media-gallery');
-
-    if (!isExpanded) {
-      // EXPAND
-      setIsExpanded(true);
-      
-      if (isMobile) {
-        // Mobile: CSS handles the transition via .expanded class
-        // Just toggle the state, CSS transitions do the rest
-      } else {
-        // Desktop: expand to full width
-        gsap.fromTo(contentArea, 
-          { left: currentLeft, width: currentWidth },
-          {
-            left: 8,
-            width: window.innerWidth - 16,
-            duration: 0.6,
-            ease: 'power2.inOut'
-          }
-        );
-        
-        // Animate content with delay - use percentage-based margins for centering
-        contentElements.forEach(el => {
-          gsap.to(el, {
-            maxWidth: '55%',
-            marginLeft: '22.5%',
-            marginRight: '22.5%',
-            duration: 0.7,
-            delay: 0.15,
-            ease: 'power2.inOut'
-          });
-        });
-      }
-      
-    } else {
-      // COLLAPSE
-      setIsExpanded(false);
-      
-      if (isMobile) {
-        // Mobile: CSS handles the transition via removing .expanded class
-        // Just toggle the state, CSS transitions do the rest
-      } else {
-        // Desktop: collapse back to original position
-        // Animate content back to full width first
-        contentElements.forEach(el => {
-          gsap.to(el, {
-            maxWidth: '100%',
-            marginLeft: 0,
-            marginRight: 0,
-            duration: 0.5,
-            ease: 'power2.inOut'
-          });
-        });
-        
-        // Animate container with delay
-        gsap.fromTo(contentArea,
-          { left: currentLeft, width: currentWidth },
-          {
-            left: window.innerWidth * 3 / 7,
-            width: window.innerWidth * 4 / 7 - 16,
-            duration: 0.6,
-            delay: 0.3,
-            ease: 'power2.inOut',
-            onComplete: () => {
-              contentArea.style.left = 'calc(100vw * 3 / 7)';
-              contentArea.style.width = 'calc(100vw * 4 / 7 - 16px)';
-            }
-          }
-        );
-      }
-    }
-  };
 
   useEffect(() => {
     const findContent = (items, parent = null) => {
@@ -494,34 +605,11 @@ function ContentArea() {
       const allVideos = contentInnerRef.current.querySelectorAll('video');
       allVideos.forEach(video => video.pause());
       
-      // Fade out current content
-      gsap.to(contentInnerRef.current, {
-        opacity: 0,
-        duration: 0.3,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          // Update content while invisible
-          previousContentRef.current = content;
-          setContent(newContent);
-          setParentSubmenu(submenuItems ? { items: submenuItems, parentId } : null);
-          
-          // Small delay to let new content render, then fade in
-          setTimeout(() => {
-            gsap.fromTo(
-              contentInnerRef.current,
-              { opacity: 0 },
-              { 
-                opacity: 1,
-                duration: 0.3,
-                ease: 'power2.inOut',
-                onComplete: () => {
-                  setIsTransitioning(false);
-                }
-              }
-            );
-          }, 50);
-        }
-      });
+      // Hard cut — swap content immediately
+      previousContentRef.current = content;
+      setContent(newContent);
+      setParentSubmenu(submenuItems ? { items: submenuItems, parentId } : null);
+      setIsTransitioning(false);
     } else {
       setContent(newContent);
       setParentSubmenu(submenuItems ? { items: submenuItems, parentId } : null);
@@ -557,62 +645,110 @@ function ContentArea() {
       );
     }
     
-    // Grid view for submenu landing pages
-    if (contentData.isGrid && parentSubmenu?.items) {
+    // Projects page – 2-per-row card grid
+    if (contentData.isProjectsPage && contentData.projects) {
       return (
-        <div className="grid-content">
-          <div className="video-grid">
-            {parentSubmenu.items.slice(0, 9).map((item) => {
-              const videoSrc = getVideoSrc(item);
-              const thumbnailSrc = item.content?.thumbnail;
-              const isVideoThumbnail = thumbnailSrc && (thumbnailSrc.endsWith('.mp4') || thumbnailSrc.endsWith('.mov') || thumbnailSrc.endsWith('.webm'));
-              return (
-                <div 
-                  key={item.id} 
-                  className="grid-item"
-                  onClick={() => handleGridItemClick(item.id, parentSubmenu.parentId)}
-                >
-                  {thumbnailSrc ? (
-                    isVideoThumbnail ? (
-                      <GridVideo
-                        src={thumbnailSrc}
-                      />
-                    ) : (
-                      <GridImage
-                        src={thumbnailSrc}
-                        alt={item.title}
-                      />
-                    )
-                  ) : videoSrc && (
-                    <GridVideo
-                      src={videoSrc}
-                    />
-                  )}
-                  <div className="grid-item-overlay">
-                    <span className="grid-item-title">{item.title}</span>
-                  </div>
+        <div className="projects-page">
+          <div className="page-header">
+            <h1>{contentData.title}</h1>
+          </div>
+          <div className="projects-grid">
+            {contentData.projects.map((project, index) => (
+              <div key={index} className="project-card">
+                <div className="project-card-text">
+                  <span className="project-card-title">{project.title}</span>
+                  <span className="project-card-desc">{project.description}</span>
                 </div>
-              );
-            })}
+                <div className="project-card-image">
+                  <img src={project.image} alt={project.title} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       );
     }
+
+    // Row-based work list for submenu landing pages
+    if (contentData.isGrid && parentSubmenu?.items) {
+      const listItems = parentSubmenu.items;
+      return (
+        <WorkList 
+          items={listItems} 
+          onItemClick={(itemId) => handleGridItemClick(itemId, parentSubmenu.parentId)} 
+        />
+      );
+    }
     
-    // Check if this is a text-only page (no media)
+    // About page – custom layout
+    if (contentData.isAboutPage) {
+      return (
+        <div className="about-page">
+          <div className="about-copy">
+            <h1 className="about-headline">{contentData.headline}</h1>
+            {contentData.statements?.map((s, i) => (
+              <p key={i} className="about-statement">{s}</p>
+            ))}
+          </div>
+
+          <div className="about-media">
+            <AboutMediaSlot slotIndex={0} />
+            <AboutMediaSlot slotIndex={1} />
+          </div>
+
+          <div className="about-footer">
+            <div className="about-skills">
+              {contentData.skills?.map((s, i) => (
+                <span key={i} className="about-skill">{s}</span>
+              ))}
+            </div>
+            <div className="about-info">
+              <div className="about-info-links">
+                {contentData.links?.map((link, i) => (
+                  <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className={`about-link ${link.underline ? 'underline' : ''}`}>{link.label}</a>
+                ))}
+              </div>
+              <div className="about-info-bottom">
+                {contentData.location && <span className="about-location">{contentData.location}</span>}
+                {contentData.cta && (
+                  <a href={contentData.cta.href} target="_blank" rel="noopener noreferrer" className={`about-link ${contentData.cta.underline ? 'underline' : ''}`}>{contentData.cta.label}</a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Check if this is a text-only page (no media)
     const isTextOnly = !contentData.videoUrl && !contentData.videoKey && 
                        !contentData.imageGallery && !contentData.videoGallery && 
                        !contentData.mediaGallery && !contentData.sections &&
-                       !contentData.contactLinks;
+                       !contentData.contactLinks && !contentData.blocks;
     
     // Regular page view
+    const hasCaseStudyHeader = contentData.year || contentData.tags;
     return (
       <div className={`page-content ${isTextOnly ? 'text-only' : ''}`}>
-        <div className="page-header">
-          <h1>{contentData.title}</h1>
-          {contentData.description && <p className="description">{contentData.description}</p>}
-        </div>
+        {hasCaseStudyHeader ? (
+          <div className="case-study-header">
+            <div className="case-study-header-row">
+              <div className="case-study-left">
+                <h1 className="case-study-title">{contentData.title}</h1>
+                {contentData.description && <p className="case-study-description">{contentData.description}</p>}
+              </div>
+              <div className="case-study-right">
+                {contentData.year && <span className="case-study-year">{contentData.year}</span>}
+                {contentData.tags && <span className="case-study-tags">{contentData.tags}</span>}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="page-header">
+            <h1>{contentData.title}</h1>
+            {contentData.description && <p className="description">{contentData.description}</p>}
+          </div>
+        )}
         {contentData.contactLinks && (
           <div className="contact-links">
             {contentData.contactLinks.map((link, index) => (
@@ -620,6 +756,34 @@ function ContentArea() {
                 {link.label}: <a href={link.href} target="_blank" rel="noopener noreferrer">{link.value}</a>
               </p>
             ))}
+          </div>
+        )}
+        {contentData.blocks && (
+          <div className="blocks-grid">
+            {contentData.blocks.map((block, index) => {
+              const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl}${block.src}`;
+              const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
+              const isVimeo = block.type === 'vimeo';
+              return (
+                <div
+                  key={index}
+                  className={`block-item ${contentData.clickToExpand && !isVideo && !isVimeo ? 'clickable' : ''}`}
+                  style={{ gridColumn: `${block.colStart} / span ${block.colSpan}` }}
+                >
+                  {isVimeo ? (
+                    <VimeoEmbed src={block.src} aspectRatio={block.aspectRatio} />
+                  ) : isVideo ? (
+                    <LazyVideo src={fullSrc} aspectRatio={block.aspectRatio} />
+                  ) : (
+                    <ProgressiveImage
+                      src={fullSrc}
+                      alt={`${contentData.title} - ${index + 1}`}
+                      onClick={() => contentData.clickToExpand && setLightboxImage(fullSrc)}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         {contentData.videoUrl && (
@@ -725,12 +889,7 @@ function ContentArea() {
   };
 
   return (
-    <div className={`content-area ${isExpanded ? 'expanded' : ''}`} ref={contentAreaRef}>
-      <button 
-        className={`expand-button ${isExpanded ? 'expanded' : ''}`}
-        onClick={toggleExpand}
-        aria-label={isExpanded ? 'Collapse' : 'Expand'}
-      />
+    <div className="content-area" ref={contentAreaRef}>
       {content && (
         <div className="content-slide-wrapper" ref={contentInnerRef}>
           <div className="content-inner" ref={scrollContainerRef}>

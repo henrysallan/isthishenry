@@ -55,7 +55,7 @@
 }
 
 .bezier-slider-label {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 10px;
   font-weight: 400;
   opacity: 0.5;

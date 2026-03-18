@@ -185,7 +185,7 @@ function MenuItem({ text, position, onClick, isActive, fontSize = 0.5, animateIn
         color={color}
         anchorX="left"
         anchorY="middle"
-        font="/font/IBMPlexMono-Regular.ttf"
+        font="/font/Inter-Regular.ttf"
       >
         {text}
       </Text>

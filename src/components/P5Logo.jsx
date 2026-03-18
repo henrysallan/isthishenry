@@ -69,8 +69,8 @@ function P5Logo({ text = 'Henry Allan', fontSize = 16 }) {
       let fontLoaded = false;
       let letters = [];
       let shards = [];
-      let textStartX = 20;
-      let textStartY = 20 + fontSize;
+      let textStartX = 8;
+      let textStartY = 5 + fontSize;
       const hoverRadius = 30;
 
       // Shard class for fractured letter pieces
