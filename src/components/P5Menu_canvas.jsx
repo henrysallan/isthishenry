@@ -90,7 +90,7 @@ function P5Menu() {
   }, [getCanvasWidth]);
 
   const getMenuPositionPx = useCallback((menuLevel, itemIndex, itemCount) => {
-    const spacing = isMobile() ? 35 : 25;
+    const spacing = isMobile() ? 20 : 25;
     const totalHeight = (itemCount - 1) * spacing;
     const h = getCanvasHeight();
     const centerY = h / 2;

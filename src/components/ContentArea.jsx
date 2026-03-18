@@ -496,8 +496,9 @@ function LazyVideo({ src, poster, aspectRatio }) {
 // Vimeo embed component - no controls, autoplay, loop
 function VimeoEmbed({ src, aspectRatio = '56.25%' }) {
   // Extract video ID from various Vimeo URL formats
+  // Supports: vimeo.com/{id}, player.vimeo.com/video/{id}, player.vimeo.com/external/{id}.m3u8
   const getVimeoId = (url) => {
-    const match = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/);
+    const match = url.match(/(?:vimeo\.com\/|player\.vimeo\.com\/(?:video|external)\/)(\d+)/);
     return match ? match[1] : url;
   };
   const videoId = getVimeoId(src);
@@ -763,7 +764,7 @@ function ContentArea() {
             {contentData.blocks.map((block, index) => {
               const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl}${block.src}`;
               const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
-              const isVimeo = block.type === 'vimeo';
+              const isVimeo = block.type === 'vimeo' || /player\.vimeo\.com\/external\//.test(fullSrc);
               return (
                 <div
                   key={index}

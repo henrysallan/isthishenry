@@ -548,8 +548,12 @@
   }
 
   /* About page mobile */
+  .about-copy {
+    max-width: 100%;
+  }
+
   .about-media {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .about-footer {
@@ -568,6 +572,22 @@
     min-height: auto;
   }
 
+  .case-study-title {
+    font-size: 18px;
+  }
+
+  .case-study-description {
+    font-size: 12px;
+  }
+
+  .case-study-year {
+    font-size: 14px;
+  }
+
+  .case-study-tags {
+    font-size: 12px;
+  }
+
   .case-study-right {
     align-items: flex-start;
     text-align: left;
@@ -577,12 +597,14 @@
 
   /* Work list mobile */
   .work-list {
-    padding: 0 12px;
+    padding: 16px 12px;
+    gap: 10px;
   }
 
   .work-row {
-    padding: 8px 0;
+    padding: 8px 8px;
     gap: 10px;
+    margin: 0;
   }
 
   .work-row-thumb {
