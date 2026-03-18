@@ -90,7 +90,7 @@ function P5Menu() {
   }, [getCanvasWidth]);
 
   const getMenuPositionPx = useCallback((menuLevel, itemIndex, itemCount) => {
-    const spacing = isMobile() ? 20 : 25;
+    const spacing = isMobile() ? 35 : 25;
     const totalHeight = (itemCount - 1) * spacing;
     const h = getCanvasHeight();
     const centerY = h / 2;
@@ -182,8 +182,12 @@ function P5Menu() {
 
     initDots();
 
+    // Track whether the last input was touch (to suppress ghost mouse events)
+    let lastInputWasTouch = false;
+
     // Mouse tracking
     const onMouseMove = (e) => {
+      if (lastInputWasTouch) return;
       const rect = canvas.getBoundingClientRect();
       mouseRef.current.x = e.clientX - rect.left;
       mouseRef.current.y = e.clientY - rect.top;
@@ -191,8 +195,9 @@ function P5Menu() {
     canvas.addEventListener('mousemove', onMouseMove);
     canvas._onMouseMove = onMouseMove;
 
-    // Click handling
+    // Click handling (mouse)
     const onMouseDown = (e) => {
+      if (lastInputWasTouch) { lastInputWasTouch = false; return; }
       const rect = canvas.getBoundingClientRect();
       const rawX = e.clientX - rect.left;
       const rawY = e.clientY - rect.top;
@@ -203,6 +208,7 @@ function P5Menu() {
 
     // Touch handling
     const onTouchStart = (e) => {
+      lastInputWasTouch = true;
       const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
       const rawX = touch.clientX - rect.left;
@@ -213,6 +219,24 @@ function P5Menu() {
     };
     canvas.addEventListener('touchstart', onTouchStart, { passive: true });
     canvas._onTouchStart = onTouchStart;
+
+    // Track touch movement for hover feedback
+    const onTouchMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      mouseRef.current.x = touch.clientX - rect.left;
+      mouseRef.current.y = touch.clientY - rect.top;
+    };
+    canvas.addEventListener('touchmove', onTouchMove, { passive: true });
+    canvas._onTouchMove = onTouchMove;
+
+    // Reset mouse position on touch end so nothing stays hovered
+    const onTouchEnd = () => {
+      mouseRef.current.x = -9999;
+      mouseRef.current.y = -9999;
+    };
+    canvas.addEventListener('touchend', onTouchEnd);
+    canvas._onTouchEnd = onTouchEnd;
 
     // Resize
     const onResize = () => {
@@ -241,6 +265,7 @@ function P5Menu() {
     const mx = rawX - anim.cameraX;
     const my = rawY;
     const fontSize = isMobile() ? 16 : 20;
+    const hitHeight = isMobile() ? 40 : fontSize + 8;
     ctx.font = `bold ${fontSize}px InterBold, Inter, sans-serif`;
 
     const state = useNavigationStore.getState();
@@ -252,7 +277,8 @@ function P5Menu() {
 
     // Back button
     if (anim.backButton.scale > 0.3) {
-      if (isPointInRect(mx, my, anim.backButton.x - 12, anim.backButton.y, 24, 20)) {
+      const backSize = isMobile() ? 40 : 24;
+      if (isPointInRect(mx, my, anim.backButton.x - backSize / 2, anim.backButton.y, backSize, backSize)) {
         state.goBack();
         return;
       }
@@ -262,7 +288,7 @@ function P5Menu() {
     for (let i = 0; i < mainMenu.length; i++) {
       const item = anim.mainItems[i];
       const tw = ctx.measureText(mainMenu[i].title).width;
-      if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, fontSize + 8)) {
+      if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
         const menuItem = mainMenu[i];
         if (menuItem.type === 'submenu') {
           state.navigateToSubmenu(menuItem.id);
@@ -286,7 +312,7 @@ function P5Menu() {
       const item = anim.subItems[i];
       if (item.opacity > 0.1) {
         const tw = ctx.measureText(submenuData[i].title).width;
-        if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, fontSize + 8)) {
+        if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
           const subItem = submenuData[i];
           if (subItem.type === 'page') {
             state.navigateToSubpage(subItem.id, state.expandedSubmenuId);
@@ -435,6 +461,7 @@ function P5Menu() {
     // ── Font setup ──
     const mainMenu = navigationData.mainMenu.filter(m => !m.hidden);
     const fontSize = isMobile() ? 16 : 20;
+    const hitHeight = isMobile() ? 40 : fontSize + 8;
     ctx.font = `bold ${fontSize}px InterBold, Inter, sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -475,7 +502,7 @@ function P5Menu() {
       const isHov = isPointInRect(
         mouse.x - anim.cameraX, mouse.y,
         anim.mainItems[i].x - 5, anim.mainItems[i].y,
-        tw + 10, fontSize + 8
+        tw + 10, hitHeight
       );
       anim.mainItems[i].targetOpacity = isActive ? 1 : isHov ? 1 : 0.5;
     }
@@ -528,7 +555,7 @@ function P5Menu() {
         const isHov = isPointInRect(
           mouse.x - anim.cameraX, mouse.y,
           anim.subItems[i].x - 5, anim.subItems[i].y,
-          tw + 10, fontSize + 8
+          tw + 10, hitHeight
         );
         anim.subItems[i].targetOpacity = isActive ? 1 : isHov ? 1 : 0.5;
       } else {
@@ -748,9 +775,10 @@ function P5Menu() {
       anim.backButton.x += (anim.backButton.targetX - anim.backButton.x) * 0.1;
       anim.backButton.y += (anim.backButton.targetY - anim.backButton.y) * 0.1;
 
+      const backBtnSize = isMobile() ? 40 : 24;
       const backHovered = isPointInRect(
         mouse.x - anim.cameraX, mouse.y,
-        anim.backButton.x - 12, anim.backButton.y, 24, 20
+        anim.backButton.x - backBtnSize / 2, anim.backButton.y, backBtnSize, backBtnSize
       );
       drawBackButton(ctx, anim.backButton.x, anim.backButton.y, anim.backButton.scale, textColor, backHovered);
     }
@@ -765,7 +793,7 @@ function P5Menu() {
     for (let i = 0; i < mainMenu.length; i++) {
       const item = anim.mainItems[i];
       const tw = ctx.measureText(mainMenu[i].title).width;
-      if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, fontSize + 8)) {
+      if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
         isHovering = true;
       }
     }
@@ -774,13 +802,14 @@ function P5Menu() {
       const item = anim.subItems[i];
       if (item.opacity > 0.1) {
         const tw = ctx.measureText(submenuData[i].title).width;
-        if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, fontSize + 8)) {
+        if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
           isHovering = true;
         }
       }
     }
     if (anim.backButton.scale > 0.3) {
-      if (isPointInRect(mx, my, anim.backButton.x - 12, anim.backButton.y, 24, 20)) {
+      const backSize = isMobile() ? 40 : 24;
+      if (isPointInRect(mx, my, anim.backButton.x - backSize / 2, anim.backButton.y, backSize, backSize)) {
         isHovering = true;
       }
     }
@@ -804,6 +833,8 @@ function P5Menu() {
         if (canvas._onMouseMove) canvas.removeEventListener('mousemove', canvas._onMouseMove);
         if (canvas._onMouseDown) canvas.removeEventListener('mousedown', canvas._onMouseDown);
         if (canvas._onTouchStart) canvas.removeEventListener('touchstart', canvas._onTouchStart);
+        if (canvas._onTouchMove) canvas.removeEventListener('touchmove', canvas._onTouchMove);
+        if (canvas._onTouchEnd) canvas.removeEventListener('touchend', canvas._onTouchEnd);
         if (canvas._onResize) window.removeEventListener('resize', canvas._onResize);
         canvas.remove();
       }
