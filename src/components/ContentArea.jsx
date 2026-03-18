@@ -235,20 +235,24 @@ function ProgressiveImage({ src, alt, className, onClick }) {
 
   return (
     <div className={`progressive-image-wrapper ${isLoaded ? 'loaded' : 'loading'} ${hasError ? 'error' : ''}`} onClick={hasError ? handleRetry : onClick}>
-      {currentSrc ? (
-        <img 
-          src={currentSrc}
-          alt={alt}
-          className={className}
-        />
-      ) : hasError ? (
+      {hasError ? (
         <div className="image-error-placeholder">
           <span>⟳</span>
         </div>
       ) : (
-        <div className="image-placeholder">
-          <span className="loading-number">{Math.floor(loadProgress)}</span>
-        </div>
+        <>
+          {!isLoaded && (
+            <div className="image-placeholder">
+              <span className="loading-number">{Math.floor(loadProgress)}</span>
+            </div>
+          )}
+          <img 
+            src={currentSrc || undefined}
+            alt={alt}
+            className={className}
+            style={!isLoaded ? { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' } : undefined}
+          />
+        </>
       )}
     </div>
   );
@@ -366,10 +370,12 @@ function LazyVideo({ src, poster, aspectRatio }) {
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [loadProgress, setLoadProgress] = useState(0);
+  const [useVimeoFallback, setUseVimeoFallback] = useState(false);
   const fakeProgressRef = useRef(null);
   const targetFakeProgress = useRef(Math.floor(Math.random() * 16) + 85);
   const maxRetries = 3;
   const isHLS = src && src.includes('.m3u8');
+  const isVimeoHLS = isHLS && /player\.vimeo\.com\/external\//.test(src);
 
   // Fake progress animation
   useEffect(() => {
@@ -404,10 +410,24 @@ function LazyVideo({ src, poster, aspectRatio }) {
         hls.loadSource(src);
       });
       hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) handleError();
+        if (data.fatal) {
+          // On fatal error (e.g. CORS), destroy hls.js and try native playback
+          hls.destroy();
+          hlsRef.current = null;
+          if (video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL')) {
+            video.src = src;
+            video.load();
+            video.play().catch(() => {});
+          } else if (isVimeoHLS) {
+            // Fall back to Vimeo iframe embed (bypasses CORS)
+            setUseVimeoFallback(true);
+          } else {
+            handleError();
+          }
+        }
       });
-    } else if (isHLS && video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS (Safari)
+    } else if (isHLS) {
+      // Native HLS (Safari / browsers with native support)
       video.src = src;
     }
 
@@ -462,6 +482,11 @@ function LazyVideo({ src, poster, aspectRatio }) {
   const videoSrc = retryCount > 0 
     ? `${src}${src.includes('?') ? '&' : '?'}_retry=${retryCount}` 
     : src;
+
+  // Vimeo iframe fallback when hls.js fails (e.g. CORS on Edge)
+  if (useVimeoFallback) {
+    return <VimeoEmbed src={src} aspectRatio={aspectRatio} />;
+  }
 
   if (hasError) {
     return (
@@ -661,7 +686,7 @@ function ContentArea() {
                   <span className="project-card-desc">{project.description}</span>
                 </div>
                 <div className="project-card-image">
-                  <img src={project.image} alt={project.title} />
+                  <ProgressiveImage src={project.image} alt={project.title} />
                 </div>
               </div>
             ))}
@@ -764,7 +789,7 @@ function ContentArea() {
             {contentData.blocks.map((block, index) => {
               const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl}${block.src}`;
               const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
-              const isVimeo = block.type === 'vimeo' || /player\.vimeo\.com\/external\//.test(fullSrc);
+              const isVimeo = block.type === 'vimeo';
               return (
                 <div
                   key={index}
