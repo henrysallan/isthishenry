@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import p5 from 'p5';
 import { navigationData } from '../data/navigation';
 import { useNavigationStore } from '../store/navigationStore';
 import { colorThemes, theme } from '../config/theme';
@@ -9,6 +8,16 @@ const MAX_RETRIES = 3;
 const HEALTH_CHECK_DELAY = 2000; // ms after init to verify canvas is alive
 const HEARTBEAT_STALE_MS = 1000; // if no draw frame for this long, consider dead
 
+// Lazy-load p5 as a separate chunk
+let p5Module = null;
+const loadP5 = () => {
+  if (p5Module) return Promise.resolve(p5Module);
+  return import('p5').then(mod => {
+    p5Module = mod.default;
+    return p5Module;
+  });
+};
+
 function P5Menu() {
   const containerRef = useRef(null);
   const p5InstanceRef = useRef(null);
@@ -16,6 +25,9 @@ function P5Menu() {
   const healthTimerRef = useRef(null);
   const lastDrawTimeRef = useRef(0); // timestamp of last draw() call
   const initIdRef = useRef(0); // guard against stale health checks
+  const [p5Ready, setP5Ready] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
+  const loadStartRef = useRef(Date.now());
 
   // Teardown helper
   const destroyInstance = useCallback(() => {
@@ -27,14 +39,16 @@ function P5Menu() {
       try { p5InstanceRef.current.remove(); } catch (_) { /* already removed */ }
       p5InstanceRef.current = null;
     }
+    // Only clear canvas elements, not the loading overlay
     if (containerRef.current) {
-      containerRef.current.innerHTML = '';
+      const canvases = containerRef.current.querySelectorAll('canvas');
+      canvases.forEach(c => c.remove());
     }
   }, []);
 
   // Initialise (or re-initialise) the p5 sketch
   const initSketch = useCallback(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !p5Module) return;
     destroyInstance();
 
     const thisInitId = ++initIdRef.current;
@@ -121,13 +135,14 @@ function P5Menu() {
 
       // ── Background dots ──
       function initDots() {
-        const gridSize = isMobile() ? 30 : 50;
+        const gridCols = isMobile() ? 6 : 10;
+        const gridRows = isMobile() ? 30 : 50;
         const spacingPx = isMobile() ? 20 : 40;
         animState.dotPositions = [];
         animState.dotBasePositions = [];
 
-        for (let i = 0; i < gridSize; i++) {
-          for (let j = 0; j < gridSize; j++) {
+        for (let i = 0; i < gridCols; i++) {
+          for (let j = 0; j < gridRows; j++) {
             const bx = i * spacingPx;
             const by = j * spacingPx;
             animState.dotBasePositions.push({ x: bx, y: by });
@@ -810,7 +825,7 @@ function P5Menu() {
       };
     };
 
-    p5InstanceRef.current = new p5(sketch, containerRef.current);
+    p5InstanceRef.current = new p5Module(sketch, containerRef.current);
 
     // ── Health check: verify the canvas is alive & draw loop is running ──
     healthTimerRef.current = setTimeout(() => {
@@ -838,15 +853,40 @@ function P5Menu() {
     }, HEALTH_CHECK_DELAY);
   }, [destroyInstance]);
 
-  // Kick off on mount
+  // Animate loading progress
+  useEffect(() => {
+    if (p5Ready) return;
+    const targetDuration = 1500; // ms to count to ~90
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - loadStartRef.current;
+      const progress = Math.min(90, (elapsed / targetDuration) * 90);
+      setLoadProgress(Math.floor(progress));
+    }, 50);
+    return () => clearInterval(interval);
+  }, [p5Ready]);
+
+  // Load p5 dynamically, then init sketch
   useEffect(() => {
     retryCountRef.current = 0;
-    initSketch();
+    loadP5().then(() => {
+      setLoadProgress(100);
+      // Brief delay so 100 is visible before canvas appears
+      setTimeout(() => {
+        setP5Ready(true);
+        initSketch();
+      }, 150);
+    });
     return () => destroyInstance();
   }, [initSketch, destroyInstance]);
 
   return (
-    <div ref={containerRef} className="p5-menu-container" />
+    <div ref={containerRef} className="p5-menu-container">
+      {!p5Ready && (
+        <div className="p5-loading-overlay">
+          <span className="p5-loading-number">{loadProgress}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
