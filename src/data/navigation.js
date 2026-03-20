@@ -44,6 +44,26 @@ export const navigationData = {
           }
         },
         {
+          id: 'smokeye-hill',
+          title: 'Smokeye Hill',
+          type: 'page',
+          content: {
+            title: 'Smokeye Hill',
+            year: '2026',
+            tags: 'Visual Design, Motion, 3D',
+            description: 'Brand identity work for Smokeye Hill, a whiskey company from Colorado.',
+            blocks: [
+              { type: 'video', src: 'https://player.vimeo.com/external/1172671748.m3u8?s=b130afd807d0ea4e5e114ede169cfe3780b875df&logging=false', colSpan: 12, colStart: 1 },
+              { type: 'video', src: 'https://player.vimeo.com/external/1172672258.m3u8?s=57711c63e8a2eb83e66c078dafa4230995c3b504&logging=false', colSpan: 6, colStart: 1 },
+              { type: 'video', src: 'https://player.vimeo.com/external/1172672186.m3u8?s=64c4c1621491b59e7f0beadf15c4cdb50df1947f&logging=false', colSpan: 6, colStart: 7 },
+              { type: 'video', src: 'https://player.vimeo.com/external/1172687093.m3u8?s=f2b5d82eebbc5b34f8259570340f99d15d774552&logging=false', colSpan: 12, colStart: 1 },
+              { type: 'video', src: 'https://player.vimeo.com/external/1172672280.m3u8?s=58a946e3dfc516c8f58b5c7bc85f03b45352127e&logging=false', colSpan: 12, colStart: 1 },
+              { type: 'video', src: 'https://player.vimeo.com/external/1172671940.m3u8?s=f6288715a5ce9abb03f3f13619d4bced72f191a3&logging=false', colSpan: 12, colStart: 1 },
+              { type: 'video', src: 'https://player.vimeo.com/external/1172671586.m3u8?s=b0cc22714cebe3bfef41226ff4ed133970954cf9&logging=false', colSpan: 12, colStart: 1 }
+            ]
+          }
+        },
+        {
           id: 'guardrails-ai',
           title: 'Guardrails AI',
           type: 'page',
@@ -71,26 +91,7 @@ export const navigationData = {
             ]
           }
         },
-        {
-          id: 'smokeye-hill',
-          title: 'Smokeye Hill',
-          type: 'page',
-          content: {
-            title: 'Smokeye Hill',
-            year: '2026',
-            tags: 'Visual Design, Motion, 3D',
-            description: 'Brand identity work for Smokeye Hill, a whiskey company from Colorado.',
-            blocks: [
-              { type: 'video', src: 'https://player.vimeo.com/external/1172671748.m3u8?s=b130afd807d0ea4e5e114ede169cfe3780b875df&logging=false', colSpan: 12, colStart: 1 },
-              { type: 'video', src: 'https://player.vimeo.com/external/1172672258.m3u8?s=57711c63e8a2eb83e66c078dafa4230995c3b504&logging=false', colSpan: 6, colStart: 1 },
-              { type: 'video', src: 'https://player.vimeo.com/external/1172672186.m3u8?s=64c4c1621491b59e7f0beadf15c4cdb50df1947f&logging=false', colSpan: 6, colStart: 7 },
-              { type: 'video', src: 'https://player.vimeo.com/external/1172687093.m3u8?s=f2b5d82eebbc5b34f8259570340f99d15d774552&logging=false', colSpan: 12, colStart: 1 },
-              { type: 'video', src: 'https://player.vimeo.com/external/1172672280.m3u8?s=58a946e3dfc516c8f58b5c7bc85f03b45352127e&logging=false', colSpan: 12, colStart: 1 },
-              { type: 'video', src: 'https://player.vimeo.com/external/1172671940.m3u8?s=f6288715a5ce9abb03f3f13619d4bced72f191a3&logging=false', colSpan: 12, colStart: 1 },
-              { type: 'video', src: 'https://player.vimeo.com/external/1172671586.m3u8?s=b0cc22714cebe3bfef41226ff4ed133970954cf9&logging=false', colSpan: 12, colStart: 1 }
-            ]
-          }
-        },
+        
         {
 
           id: 'it-cosmetics',
@@ -122,54 +123,6 @@ export const navigationData = {
               { type: 'image', src: 'IT_d11_PH1_KV1_v001_set_001_HP_0005.png', colSpan: 6, colStart: 1 },
               { type: 'image', src: 'IT_d11_PH1_KV1_v001_set_001_HP_0007.png', colSpan: 6, colStart: 7 },
               { type: 'image', src: 'ithol25_Boxes_Shelves_v01.png', colSpan: 6, colStart: 1 }
-            ]
-          }
-        },
-        {
-          id: 'fact-machine',
-          title: 'Fact Machine',
-          type: 'page',
-          content: {
-            title: 'Fact Machine',
-            year: '2024',
-            tags: 'Motion, VFX',
-            description: 'Interactive fact-checking platform',
-            thumbnail: 'https://cdn.isthishenry.com/factmachine/FactMachine_v07_directorscut_1x1_3_thumb.jpg',
-            blocks: [
-              { type: 'video', src: 'https://cdn.isthishenry.com/factmachine/FactMachine_v07_directorscut_1x1_3_compressed.mp4', colSpan: 8, colStart: 1 }
-            ]
-          }
-        },
-        {
-          id: 'on-slide',
-          title: 'ON Slide',
-          type: 'page',
-          content: {
-            title: 'ON Slide',
-            year: '2024',
-            tags: '3D, Brand',
-            description: 'Presentation design and motion graphics',
-            thumbnail: 'https://cdn.isthishenry.com/RiddleON/0605_RiddleOn_ORANGE_0004.png',
-            baseUrl: 'https://cdn.isthishenry.com/RiddleON/',
-            blocks: [
-              { type: 'image', src: '0601_RiddleShoe_01.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0601_RiddleShoe_02.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0601_RiddleShoe_03.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0601_RiddleShoe_04.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0601_RiddleShoe_05.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0601_RiddleShoe_06.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0601_RiddleShoe_07.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0601_RiddleShoe_08.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0605_RiddleOn_0001.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0605_RiddleOn_0002.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0605_RiddleOn_0003.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0605_RiddleOn_0004.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0605_RiddleOn_0005.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0605_RiddleOn_ORANGE_0001.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0605_RiddleOn_ORANGE_0002.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0605_RiddleOn_ORANGE_0003.png', colSpan: 6, colStart: 7 },
-              { type: 'image', src: '0605_RiddleOn_ORANGE_0004.png', colSpan: 6, colStart: 1 },
-              { type: 'image', src: '0605_RiddleOn_ORANGE_0005.png', colSpan: 6, colStart: 7 }
             ]
           }
         },
@@ -234,22 +187,6 @@ export const navigationData = {
           }
         },
         {
-          id: 'modl',
-          title: 'Modl',
-          type: 'page',
-          hideFromGrid: true,
-          content: {
-            title: 'Modl',
-            year: '2025',
-            tags: '3D, Digital',
-            description: 'Furniture visualization demo',
-            thumbnail: 'https://cdn.isthishenry.com/FurnitureDemo_jake_v01.mov',
-            blocks: [
-              { type: 'video', src: 'https://cdn.isthishenry.com/FurnitureDemo_jake_v01.mov', colSpan: 8, colStart: 1 }
-            ]
-          }
-        },
-        {
           id: 'lattafa',
           title: 'Lattafa',
           type: 'page',
@@ -293,6 +230,81 @@ export const navigationData = {
           }
         },
         {
+          id: 'more',
+          title: 'More',
+          type: 'submenu',
+          content: {
+            title: 'More',
+            description: 'Additional projects and experiments',
+            isGrid: true
+          },
+          submenu: [
+            {
+              id: 'on-slide',
+              title: 'ON Slide',
+              type: 'page',
+              content: {
+                title: 'ON Slide',
+                year: '2024',
+                tags: '3D, Brand',
+                description: 'Presentation design and motion graphics',
+                thumbnail: 'https://cdn.isthishenry.com/RiddleON/0605_RiddleOn_ORANGE_0004.png',
+                baseUrl: 'https://cdn.isthishenry.com/RiddleON/',
+                blocks: [
+                  { type: 'image', src: '0601_RiddleShoe_01.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0601_RiddleShoe_02.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0601_RiddleShoe_03.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0601_RiddleShoe_04.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0601_RiddleShoe_05.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0601_RiddleShoe_06.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0601_RiddleShoe_07.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0601_RiddleShoe_08.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0605_RiddleOn_0001.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0605_RiddleOn_0002.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0605_RiddleOn_0003.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0605_RiddleOn_0004.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0605_RiddleOn_0005.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0605_RiddleOn_ORANGE_0001.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0605_RiddleOn_ORANGE_0002.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0605_RiddleOn_ORANGE_0003.png', colSpan: 6, colStart: 7 },
+                  { type: 'image', src: '0605_RiddleOn_ORANGE_0004.png', colSpan: 6, colStart: 1 },
+                  { type: 'image', src: '0605_RiddleOn_ORANGE_0005.png', colSpan: 6, colStart: 7 }
+                ]
+              }
+            },
+            {
+              id: 'modl',
+              title: 'Modl',
+              type: 'page',
+              content: {
+                title: 'Modl',
+                year: '2025',
+                tags: '3D, Digital',
+                description: 'Furniture visualization demo',
+                thumbnail: 'https://cdn.isthishenry.com/FurnitureDemo_jake_v01.mov',
+                blocks: [
+                  { type: 'video', src: 'https://cdn.isthishenry.com/FurnitureDemo_jake_v01.mov', colSpan: 8, colStart: 1 }
+                ]
+              }
+            },
+            {
+              id: 'fact-machine',
+              title: 'Fact Machine',
+              type: 'page',
+              content: {
+                title: 'Fact Machine',
+                year: '2024',
+                tags: 'Motion, VFX',
+                description: 'Interactive fact-checking platform',
+                thumbnail: 'https://cdn.isthishenry.com/factmachine/FactMachine_v07_directorscut_1x1_3_thumb.jpg',
+                blocks: [
+                  { type: 'video', src: 'https://cdn.isthishenry.com/factmachine/FactMachine_v07_directorscut_1x1_3_compressed.mp4', colSpan: 8, colStart: 1 }
+                ]
+              }
+            }
+          ]
+        },
+        {
           id: '2025-reel',
           title: '2025 Reel',
           type: 'page',
@@ -319,8 +331,33 @@ export const navigationData = {
         title: 'About',
         headline: 'Isthishenry? Yes.',
         statements: [
-          'When I design, I am thinking about participating in a conversation.',
-          'Great design means to listen and speak with care.'
+          {
+            prefix: 'When I design, I am ',
+            suffixes: [
+              'thinking about participating in a conversation',
+              'free',
+              'learning from my heroes',
+              'being in the world',
+              'trusting my process',
+              'confident'
+            ]
+          },
+          {
+            prefix: 'Great design means ',
+            suffixes: [
+              'to listen and speak with care',
+              'to clarify',
+              'to beckon',
+              'to attend to',
+              'to discover',
+              'to push the edge',
+              'to rediscover',
+              'to celebrate',
+              'to find again',
+              'to have a vision',
+              'to learn the world'
+            ]
+          }
         ],
         skills: ['3D', 'Motion', 'Brand', 'Vibecoding', 'Digital', 'VFX'],
         links: [

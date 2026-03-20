@@ -66,6 +66,16 @@ function P5Menu() {
         submenuWireDirection: 0, // 1 = drawing on, -1 = drawing off
         submenuWireVisible: false,
         submenuWireEndpoints: null, // cached {x1,y1,x2,y2} for undraw
+        // Nested submenu (third level) items and wire
+        nestedItems: [],
+        nestedAnimStartTime: 0,
+        nestedAnimDirection: 0,
+        prevExpandedNestedIdForAnim: null,
+        nestedWireStartTime: 0,
+        nestedWireDirection: 0,
+        nestedWireVisible: false,
+        nestedWireEndpoints: null,
+        prevExpandedNestedId: null,
         pageWireStartTime: 0,
         pageWireDirection: 0,
         pageWireVisible: false,
@@ -113,6 +123,9 @@ function P5Menu() {
             break;
           case 'submenu':
             x = getMenuX() + depthSep;
+            break;
+          case 'nested':
+            x = getMenuX() + depthSep + (isMobile() ? 80 : 200);
             break;
           default:
             x = getMenuX();
@@ -338,7 +351,7 @@ function P5Menu() {
         // ── Read store state ──
         const state = useNavigationStore.getState();
         const {
-          currentView, activeMenuItem, expandedSubmenuId,
+          currentView, activeMenuItem, expandedSubmenuId, expandedNestedSubmenuId,
           currentTheme, isThemeInverted, isHoveringMenuItem
         } = state;
         const activeColors = colorThemes[currentTheme];
@@ -363,9 +376,41 @@ function P5Menu() {
         p.textStyle(p.BOLD);
         if (font) p.textFont(font);
 
-        // ── Camera offset for submenu ──
-        // Calculate pan so submenu items are centered in the canvas
-        if (expandedSubmenuId) {
+        // ── Resolve nested submenu data ──
+        const expandedParent = expandedSubmenuId
+          ? mainMenu.find(m => m.id === expandedSubmenuId)
+          : null;
+        const submenuData = expandedParent?.submenu || [];
+        const nestedParent = expandedNestedSubmenuId
+          ? submenuData.find(s => s.id === expandedNestedSubmenuId)
+          : null;
+        const nestedData = nestedParent?.submenu || [];
+
+        // ── Camera offset ──
+        // Pan to center on the deepest visible menu level
+        if (expandedNestedSubmenuId && nestedData.length > 0) {
+          // When nested is open, pan so both submenu and nested columns are visible.
+          // Place the midpoint between submenu column and nested column at canvas center.
+          const depthSep = isMobile()
+            ? theme.spatial.menuDepthSeparation * 25
+            : theme.spatial.menuDepthSeparation * 50;
+          const nestedOffset = isMobile() ? 80 : 120;
+          const submenuX = getMenuX() + depthSep;
+          const nestedX = submenuX + nestedOffset;
+          // Find the widest nested item text
+          let maxNestedTextW = 0;
+          for (let i = 0; i < nestedData.length; i++) {
+            maxNestedTextW = Math.max(maxNestedTextW, p.textWidth(nestedData[i].title));
+          }
+          // Right edge of the nested items
+          const rightEdge = nestedX + maxNestedTextW + 10;
+          // Left edge of the submenu items (give some padding)
+          const leftEdge = submenuX - 20;
+          // Center the combined span in the canvas
+          const combinedCenter = (leftEdge + rightEdge) / 2;
+          const canvasCenter = p.width / 2;
+          animState.targetCameraX = canvasCenter - combinedCenter;
+        } else if (expandedSubmenuId) {
           const depthSep = isMobile()
             ? theme.spatial.menuDepthSeparation * 25
             : theme.spatial.menuDepthSeparation * 50;
@@ -413,10 +458,7 @@ function P5Menu() {
         }
 
         // ── Submenu items ──
-        const expandedParent = expandedSubmenuId
-          ? mainMenu.find(m => m.id === expandedSubmenuId)
-          : null;
-        const submenuData = expandedParent?.submenu || [];
+        // (submenuData and expandedParent resolved above)
 
         // Ensure animState.subItems has the right length
         while (animState.subItems.length < submenuData.length) {
@@ -566,6 +608,142 @@ function P5Menu() {
           }
         }
 
+        // ══════════════════════════════════════════
+        // ── Nested submenu items (third level) ──
+        // ══════════════════════════════════════════
+
+        // Ensure animState.nestedItems has enough slots
+        while (animState.nestedItems.length < nestedData.length) {
+          const idx = animState.nestedItems.length;
+          const pos = getMenuPositionPx('nested', idx, nestedData.length);
+          animState.nestedItems.push({
+            x: pos.x, y: pos.y + 30,
+            targetX: pos.x, targetY: pos.y,
+            opacity: 0, targetOpacity: 0.5,
+          });
+        }
+
+        // Detect nested open/close transitions
+        if (expandedNestedSubmenuId && !animState.prevExpandedNestedIdForAnim) {
+          animState.nestedAnimStartTime = p.millis();
+          animState.nestedAnimDirection = 1;
+        } else if (!expandedNestedSubmenuId && animState.prevExpandedNestedIdForAnim) {
+          animState.nestedAnimStartTime = p.millis();
+          animState.nestedAnimDirection = -1;
+        }
+        animState.prevExpandedNestedIdForAnim = expandedNestedSubmenuId;
+
+        const nestedElapsed = p.millis() - animState.nestedAnimStartTime;
+
+        for (let i = 0; i < nestedData.length; i++) {
+          const pos = getMenuPositionPx('nested', i, nestedData.length);
+          animState.nestedItems[i].targetX = pos.x;
+          animState.nestedItems[i].targetY = pos.y;
+
+          if (expandedNestedSubmenuId) {
+            const isActive = activeMenuItem === nestedData[i].id || currentView === nestedData[i].id;
+            const isHov = isPointInRect(
+              p.mouseX - animState.cameraX, p.mouseY,
+              animState.nestedItems[i].x - 5, animState.nestedItems[i].y,
+              p.textWidth(nestedData[i].title) + 10, fontSize + 8
+            );
+            animState.nestedItems[i].targetOpacity = isActive ? 1 : isHov ? 1 : 0.5;
+          } else {
+            animState.nestedItems[i].targetOpacity = 0;
+          }
+        }
+
+        for (let i = 0; i < animState.nestedItems.length; i++) {
+          const item = animState.nestedItems[i];
+          const itemDelay = i * subAnimStagger;
+          let t;
+          if (animState.nestedAnimDirection === 1) {
+            t = Math.max(0, Math.min(1, (nestedElapsed - itemDelay) / subAnimDuration));
+          } else if (animState.nestedAnimDirection === -1) {
+            const reverseDelay = (animState.nestedItems.length - 1 - i) * subAnimStagger;
+            t = 1 - Math.max(0, Math.min(1, (nestedElapsed - reverseDelay) / subAnimDuration));
+          } else {
+            t = expandedNestedSubmenuId ? 1 : 0;
+          }
+          const eased = 1 - Math.pow(1 - t, 3);
+          item.x += (item.targetX - item.x) * 0.15;
+          item.y = item.targetY + subSlideOffset * (1 - eased);
+          item.opacity = item.targetOpacity * eased;
+        }
+
+        // Clean up faded nested items
+        const nestedWireStillAnimating = animState.nestedWireDirection !== 0;
+        if (!expandedNestedSubmenuId && !nestedWireStillAnimating && animState.nestedItems.every(n => n.opacity < 0.01)) {
+          animState.nestedItems = [];
+          animState.nestedAnimDirection = 0;
+        }
+
+        // ── Wire: Submenu parent → Nested items ──
+        const nestedWireDuration = 500;
+        if (expandedNestedSubmenuId && !animState.nestedWireVisible) {
+          animState.nestedWireStartTime = p.millis();
+          animState.nestedWireDirection = 1;
+          animState.nestedWireVisible = true;
+          animState.nestedWireEndpoints = null;
+        } else if (!expandedNestedSubmenuId && animState.nestedWireVisible) {
+          // Cache endpoints
+          const closingNestedId = animState.prevExpandedNestedId || expandedNestedSubmenuId;
+          const closingNestedIdx = submenuData.findIndex(s => s.id === closingNestedId);
+          if (closingNestedIdx !== -1 && animState.subItems[closingNestedIdx] && animState.nestedItems.length > 0) {
+            const pi = animState.subItems[closingNestedIdx];
+            const ptw = p.textWidth(submenuData[closingNestedIdx].title);
+            const ncy = (animState.nestedItems[0].y + animState.nestedItems[animState.nestedItems.length - 1].y) / 2;
+            const nlx = animState.nestedItems[0].x - 10;
+            animState.nestedWireEndpoints = {
+              x1: pi.x + ptw + 8, y1: pi.y,
+              x2: nlx, y2: ncy
+            };
+          }
+          animState.nestedWireStartTime = p.millis();
+          animState.nestedWireDirection = -1;
+          animState.nestedWireVisible = false;
+        }
+
+        let nestedWireT = 0;
+        if (animState.nestedWireDirection !== 0) {
+          const nwElapsed = p.millis() - animState.nestedWireStartTime;
+          const raw = Math.max(0, Math.min(1, nwElapsed / nestedWireDuration));
+          const eased = easeInOutCubic(raw);
+          nestedWireT = animState.nestedWireDirection === 1 ? eased : 1 - eased;
+          if (raw >= 1) {
+            animState.nestedWireDirection = 0;
+            animState.nestedWireEndpoints = null;
+          }
+        } else {
+          nestedWireT = expandedNestedSubmenuId ? 1 : 0;
+        }
+
+        if (nestedWireT > 0.01) {
+          let nwX1, nwY1, nwX2, nwY2;
+          if (animState.nestedWireEndpoints) {
+            nwX1 = animState.nestedWireEndpoints.x1;
+            nwY1 = animState.nestedWireEndpoints.y1;
+            nwX2 = animState.nestedWireEndpoints.x2;
+            nwY2 = animState.nestedWireEndpoints.y2;
+          } else if (nestedParent) {
+            const parentIdx = submenuData.findIndex(s => s.id === expandedNestedSubmenuId);
+            if (parentIdx !== -1 && animState.subItems[parentIdx] && animState.nestedItems.length > 0) {
+              const parentItem = animState.subItems[parentIdx];
+              nwX1 = parentItem.x + p.textWidth(submenuData[parentIdx].title) + 8;
+              nwY1 = parentItem.y;
+              // Compute center Y of nested items
+              const firstY = animState.nestedItems[0].y;
+              const lastY = animState.nestedItems[animState.nestedItems.length - 1].y;
+              nwY2 = (firstY + lastY) / 2;
+              nwX2 = animState.nestedItems[0].x - 10;
+            }
+          }
+          if (nwX1 !== undefined) {
+            drawBezierWire(nwX1, nwY1, nwX2, nwY2, nestedWireT, wireColor, 0.6, 1);
+          }
+        }
+        animState.prevExpandedNestedId = expandedNestedSubmenuId;
+
         // ── Wire: Active item → Content area edge ──
         const pageWireDuration = 500; // ms
         const shouldShowPageWire = currentView && currentView !== 'home' && activeMenuItem;
@@ -595,6 +773,15 @@ function P5Menu() {
                 ix = animState.subItems[si].x;
                 iy = animState.subItems[si].y;
                 itw = p.textWidth(submenuData[si].title);
+              } else if (nestedParent || animState.prevExpandedNestedId) {
+                // Check nested items
+                const nestedSrc = nestedParent?.submenu || (animState.prevExpandedNestedId ? submenuData.find(s => s.id === animState.prevExpandedNestedId)?.submenu : null) || [];
+                const ni = nestedSrc.findIndex(n => n.id === animState.pageWireItem);
+                if (ni !== -1 && animState.nestedItems[ni]) {
+                  ix = animState.nestedItems[ni].x;
+                  iy = animState.nestedItems[ni].y;
+                  itw = p.textWidth(nestedSrc[ni].title);
+                }
               }
             }
             if (itw > 0) {
@@ -651,6 +838,12 @@ function P5Menu() {
               if (si !== -1 && animState.subItems[si]) {
                 pwX1 = animState.subItems[si].x + p.textWidth(submenuData[si].title) + 8;
                 pwY1 = animState.subItems[si].y;
+              } else if (nestedData.length > 0) {
+                const ni = nestedData.findIndex(n => n.id === animState.pageWireItem);
+                if (ni !== -1 && animState.nestedItems[ni]) {
+                  pwX1 = animState.nestedItems[ni].x + p.textWidth(nestedData[ni].title) + 8;
+                  pwY1 = animState.nestedItems[ni].y;
+                }
               }
             }
             if (pwX1 !== undefined) {
@@ -688,15 +881,30 @@ function P5Menu() {
           p.text(submenuData[i].title, item.x, item.y);
         }
 
+        // ── Draw nested submenu items ──
+        for (let i = 0; i < nestedData.length; i++) {
+          if (i >= animState.nestedItems.length) break;
+          const item = animState.nestedItems[i];
+          if (item.opacity < 0.01) continue;
+          const c = p.color(textColor);
+          c.setAlpha(item.opacity * 255);
+          p.fill(c);
+          p.noStroke();
+          p.text(nestedData[i].title, item.x, item.y);
+        }
+
         // ── Back button ──
         const canGoBack = state.canGoBack();
         animState.backButton.targetScale = canGoBack ? 1 : 0;
         animState.backButton.scale += (animState.backButton.targetScale - animState.backButton.scale) * 0.12;
 
         if (animState.backButton.scale > 0.01) {
-          // Position above whichever menu is active
+          // Position above whichever menu is active (deepest level)
           let bx, by;
-          if (expandedSubmenuId && animState.subItems.length > 0) {
+          if (expandedNestedSubmenuId && animState.nestedItems.length > 0) {
+            bx = animState.nestedItems[0].x + 4;
+            by = animState.nestedItems[0].y - 30;
+          } else if (expandedSubmenuId && animState.subItems.length > 0) {
             bx = animState.subItems[0].x + 4;
             by = animState.subItems[0].y - 30;
           } else if (animState.mainItems.length > 0) {
@@ -745,6 +953,14 @@ function P5Menu() {
             isHovering = true;
           }
         }
+        // Check nested items
+        for (let i = 0; i < nestedData.length; i++) {
+          if (i >= animState.nestedItems.length) break;
+          const item = animState.nestedItems[i];
+          if (item.opacity > 0.1 && isPointInRect(mx, my, item.x - 5, item.y, p.textWidth(nestedData[i].title) + 10, fontSize + 8)) {
+            isHovering = true;
+          }
+        }
         // Check back button
         if (animState.backButton.scale > 0.3) {
           if (isPointInRect(mx, my, animState.backButton.x - 12, animState.backButton.y, 24, 20)) {
@@ -762,15 +978,31 @@ function P5Menu() {
         const my = p.mouseY;
         const fontSize = isMobile() ? 16 : 20;
         const mainMenu = navigationData.mainMenu.filter(m => !m.hidden);
-        const expandedParent = state.expandedSubmenuId
+        const expandedParentClick = state.expandedSubmenuId
           ? mainMenu.find(m => m.id === state.expandedSubmenuId)
           : null;
-        const submenuData = expandedParent?.submenu || [];
+        const submenuDataClick = expandedParentClick?.submenu || [];
+        const nestedParentClick = state.expandedNestedSubmenuId
+          ? submenuDataClick.find(s => s.id === state.expandedNestedSubmenuId)
+          : null;
+        const nestedDataClick = nestedParentClick?.submenu || [];
 
         // Check back button
         if (animState.backButton.scale > 0.3) {
           if (isPointInRect(mx, my, animState.backButton.x - 12, animState.backButton.y, 24, 20)) {
             state.goBack();
+            return;
+          }
+        }
+
+        // Check nested items first (deepest level has priority)
+        for (let i = 0; i < nestedDataClick.length; i++) {
+          if (i >= animState.nestedItems.length) break;
+          const item = animState.nestedItems[i];
+          if (item.opacity > 0.1 && isPointInRect(mx, my, item.x - 5, item.y, p.textWidth(nestedDataClick[i].title) + 10, fontSize + 8)) {
+            const nestedItem = nestedDataClick[i];
+            // Navigate to nested subpage, with the nested parent as parentView
+            state.navigateToSubpage(nestedItem.id, state.expandedSubmenuId, state.expandedNestedSubmenuId);
             return;
           }
         }
@@ -797,15 +1029,15 @@ function P5Menu() {
         }
 
         // Check submenu items
-        for (let i = 0; i < submenuData.length; i++) {
+        for (let i = 0; i < submenuDataClick.length; i++) {
           if (i >= animState.subItems.length) break;
           const item = animState.subItems[i];
-          if (item.opacity > 0.1 && isPointInRect(mx, my, item.x - 5, item.y, p.textWidth(submenuData[i].title) + 10, fontSize + 8)) {
-            const subItem = submenuData[i];
+          if (item.opacity > 0.1 && isPointInRect(mx, my, item.x - 5, item.y, p.textWidth(submenuDataClick[i].title) + 10, fontSize + 8)) {
+            const subItem = submenuDataClick[i];
             if (subItem.type === 'page') {
               state.navigateToSubpage(subItem.id, state.expandedSubmenuId);
             } else if (subItem.type === 'submenu') {
-              state.navigateToSubmenu(subItem.id);
+              state.navigateToNestedSubmenu(subItem.id);
             }
             return;
           }

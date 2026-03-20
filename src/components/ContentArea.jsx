@@ -7,6 +7,8 @@ import VideoPlayer from './VideoPlayer';
 import LoadingSpinner from './LoadingSpinner';
 import gsap from 'gsap';
 import Hls from 'hls.js';
+import CyclingText from './CyclingText';
+import Lightbox from './Lightbox';
 import './ContentArea.css';
 
 // Collect all video URLs from navigation data for the about page showcase
@@ -581,11 +583,12 @@ function WorkList({ items, onItemClick }) {
 }
 
 function ContentArea() {
-  const { currentView, navigateToSubpage } = useNavigationStore();
+  const { currentView, navigateToSubpage, navigateToNestedSubmenu } = useNavigationStore();
   const [content, setContent] = useState(null);
   const [parentSubmenu, setParentSubmenu] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxItems, setLightboxItems] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const contentAreaRef = useRef(null);
   const contentInnerRef = useRef(null);
   const scrollContainerRef = useRef(null);
@@ -647,8 +650,8 @@ function ContentArea() {
     previousViewRef.current = currentView;
   }, [currentView, content]);
 
-  const handleGridItemClick = (itemId, parentId) => {
-    navigateToSubpage(itemId, parentId);
+  const handleGridItemClick = (itemId, parentId, parentView = null) => {
+    navigateToSubpage(itemId, parentId, parentView);
   };
 
   const getVideoSrc = (item) => {
@@ -701,10 +704,21 @@ function ContentArea() {
     // Row-based work list for submenu landing pages
     if (contentData.isGrid && parentSubmenu?.items) {
       const listItems = parentSubmenu.items;
+      // If viewing a nested grid (e.g. More inside Work), pass current view as parentView
+      // so go-back navigates through the intermediate page
+      const nestedParentView = view !== parentSubmenu.parentId ? view : null;
       return (
         <WorkList 
           items={listItems} 
-          onItemClick={(itemId) => handleGridItemClick(itemId, parentSubmenu.parentId)} 
+          onItemClick={(itemId) => {
+            const clickedItem = listItems.find(item => item.id === itemId);
+            if (clickedItem?.type === 'submenu') {
+              // Open nested submenu (e.g. "More" inside Work)
+              navigateToNestedSubmenu(itemId);
+            } else {
+              handleGridItemClick(itemId, parentSubmenu.parentId, nestedParentView);
+            }
+          }} 
         />
       );
     }
@@ -716,7 +730,13 @@ function ContentArea() {
           <div className="about-copy">
             <h1 className="about-headline">{contentData.headline}</h1>
             {contentData.statements?.map((s, i) => (
-              <p key={i} className="about-statement">{s}</p>
+              <CyclingText
+                key={i}
+                prefix={s.prefix}
+                suffixes={s.suffixes}
+                className="about-statement"
+                interval={i === 0 ? 4000 : 5500}
+              />
             ))}
           </div>
 
@@ -787,34 +807,53 @@ function ContentArea() {
             ))}
           </div>
         )}
-        {contentData.blocks && (
-          <div className="blocks-grid">
-            {contentData.blocks.map((block, index) => {
-              const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl}${block.src}`;
+        {contentData.blocks && (() => {
+          // Build flat media list for lightbox navigation
+          const mediaItems = contentData.blocks
+            .map((block) => {
+              const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
               const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
               const isVimeo = block.type === 'vimeo';
-              return (
-                <div
-                  key={index}
-                  className={`block-item ${contentData.clickToExpand && !isVideo && !isVimeo ? 'clickable' : ''}`}
-                  style={{ gridColumn: `${block.colStart} / span ${block.colSpan}` }}
-                >
-                  {isVimeo ? (
-                    <VimeoEmbed src={block.src} aspectRatio={block.aspectRatio} />
-                  ) : isVideo ? (
-                    <LazyVideo src={fullSrc} aspectRatio={block.aspectRatio} />
-                  ) : (
-                    <ProgressiveImage
-                      src={fullSrc}
-                      alt={`${contentData.title} - ${index + 1}`}
-                      onClick={() => contentData.clickToExpand && setLightboxImage(fullSrc)}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+              if (isVimeo) return null; // skip vimeo embeds from lightbox
+              return { src: fullSrc, type: isVideo ? 'video' : 'image', alt: `${contentData.title}` };
+            })
+            .filter(Boolean);
+
+          const openLightbox = (fullSrc) => {
+            const idx = mediaItems.findIndex(m => m.src === fullSrc);
+            setLightboxItems(mediaItems);
+            setLightboxIndex(idx >= 0 ? idx : 0);
+          };
+
+          return (
+            <div className="blocks-grid">
+              {contentData.blocks.map((block, index) => {
+                const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
+                const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
+                const isVimeo = block.type === 'vimeo';
+                return (
+                  <div
+                    key={index}
+                    className={`block-item ${!isVimeo ? 'clickable' : ''}`}
+                    style={{ gridColumn: `${block.colStart} / span ${block.colSpan}` }}
+                    onClick={!isVimeo ? () => openLightbox(fullSrc) : undefined}
+                  >
+                    {isVimeo ? (
+                      <VimeoEmbed src={block.src} aspectRatio={block.aspectRatio} />
+                    ) : isVideo ? (
+                      <LazyVideo src={fullSrc} aspectRatio={block.aspectRatio} />
+                    ) : (
+                      <ProgressiveImage
+                        src={fullSrc}
+                        alt={`${contentData.title} - ${index + 1}`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
         {contentData.videoUrl && (
           <div className="video-container">
             <VideoPlayer 
@@ -838,7 +877,17 @@ function ContentArea() {
                 <ProgressiveImage 
                   src={`${contentData.imageGallery.baseUrl}${image}`}
                   alt={`${contentData.title} - ${index + 1}`}
-                  onClick={() => contentData.imageGallery.clickToExpand && setLightboxImage(`${contentData.imageGallery.baseUrl}${image}`)}
+                  onClick={() => {
+                    if (contentData.imageGallery.clickToExpand) {
+                      const items = contentData.imageGallery.images.map((img, idx) => ({
+                        src: `${contentData.imageGallery.baseUrl}${img}`,
+                        type: 'image',
+                        alt: `${contentData.title} - ${idx + 1}`
+                      }));
+                      setLightboxItems(items);
+                      setLightboxIndex(index);
+                    }
+                  }}
                 />
               </div>
             ))}
@@ -896,7 +945,17 @@ function ContentArea() {
                     <ProgressiveImage 
                       src={`${section.imageGallery.baseUrl}${image}`}
                       alt={`${section.title} - ${index + 1}`}
-                      onClick={() => section.imageGallery.clickToExpand && setLightboxImage(`${section.imageGallery.baseUrl}${image}`)}
+                      onClick={() => {
+                        if (section.imageGallery.clickToExpand) {
+                          const items = section.imageGallery.images.map((img, idx) => ({
+                            src: `${section.imageGallery.baseUrl}${img}`,
+                            type: 'image',
+                            alt: `${section.title} - ${idx + 1}`
+                          }));
+                          setLightboxItems(items);
+                          setLightboxIndex(index);
+                        }
+                      }}
                     />
                   </div>
                 ))}
@@ -926,11 +985,13 @@ function ContentArea() {
           </div>
         </div>
       )}
-      {lightboxImage && (
-        <div className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
-          <button className="lightbox-close" onClick={() => setLightboxImage(null)}>×</button>
-          <img src={lightboxImage} alt="Fullscreen view" onClick={(e) => e.stopPropagation()} />
-        </div>
+      {lightboxItems && (
+        <Lightbox
+          items={lightboxItems}
+          activeIndex={lightboxIndex}
+          onClose={() => setLightboxItems(null)}
+          onNavigate={(idx) => setLightboxIndex(idx)}
+        />
       )}
     </div>
   );

@@ -8,6 +8,8 @@ export const useNavigationStore = create((set, get) => ({
   currentMenu: 'main', // 'main' or the id of expanded submenu parent
   activeMenuItem: 'home',
   expandedSubmenuId: null, // ID of the menu item whose submenu is currently expanded
+  expandedNestedSubmenuId: null, // ID of nested submenu (e.g. "More" inside Work)
+  parentView: null, // For nested grids: the intermediate page to return to on go-back
   isHoveringMenuItem: false, // Track if hovering over any menu item
   isHoveringLogo: false, // Track if hovering over logo letters
   currentTheme: 'classic', // Active color theme
@@ -25,7 +27,9 @@ export const useNavigationStore = create((set, get) => ({
     currentView: 'home',
     currentMenu: 'main',
     activeMenuItem: null,
-    expandedSubmenuId: null
+    expandedSubmenuId: null,
+    expandedNestedSubmenuId: null,
+    parentView: null
   }),
   
   // Toggle or navigate to a submenu
@@ -36,7 +40,9 @@ export const useNavigationStore = create((set, get) => ({
         currentView: submenuParentId,
         activeMenuItem: submenuParentId,
         currentMenu: submenuParentId,
-        expandedSubmenuId: submenuParentId
+        expandedSubmenuId: submenuParentId,
+        expandedNestedSubmenuId: null,
+        parentView: null
       };
     }
     // If clicking the same submenu parent while on its landing page, collapse it
@@ -44,41 +50,94 @@ export const useNavigationStore = create((set, get) => ({
       return {
         currentMenu: 'main',
         expandedSubmenuId: null,
+        expandedNestedSubmenuId: null,
         activeMenuItem: null,
-        currentView: null
+        currentView: null,
+        parentView: null
       };
     }
     // Otherwise expand this submenu and show its landing page
     return {
       currentMenu: submenuParentId,
       expandedSubmenuId: submenuParentId,
+      expandedNestedSubmenuId: null,
       activeMenuItem: submenuParentId,
-      currentView: submenuParentId // Show the submenu's landing page
+      currentView: submenuParentId,
+      parentView: null
+    };
+  }),
+
+  // Navigate into a nested submenu (e.g. "More" inside Work)
+  navigateToNestedSubmenu: (nestedId) => set((state) => {
+    // If clicking the same nested submenu, collapse it back to parent submenu
+    if (state.expandedNestedSubmenuId === nestedId) {
+      return {
+        currentView: state.expandedSubmenuId,
+        activeMenuItem: state.expandedSubmenuId,
+        expandedNestedSubmenuId: null,
+        parentView: null
+      };
+    }
+    // Expand nested submenu — show its grid content
+    return {
+      currentView: nestedId,
+      activeMenuItem: nestedId,
+      expandedNestedSubmenuId: nestedId,
+      parentView: null
     };
   }),
   
   navigateToPage: (pageId, menuItemId) => set({
     currentView: pageId,
-    activeMenuItem: menuItemId
+    activeMenuItem: menuItemId,
+    expandedNestedSubmenuId: null,
+    parentView: null
   }),
   
   // Navigate to a subpage within an already expanded submenu
-  navigateToSubpage: (pageId, parentSubmenuId) => set({
+  // parentView: optional intermediate page for nested grids (e.g. More inside Work)
+  navigateToSubpage: (pageId, parentSubmenuId, parentView = null) => set({
     currentView: pageId,
-    activeMenuItem: pageId,
+    activeMenuItem: parentView || pageId,
     currentMenu: parentSubmenuId,
-    expandedSubmenuId: parentSubmenuId
+    expandedSubmenuId: parentSubmenuId,
+    expandedNestedSubmenuId: parentView || null,
+    parentView: parentView
   }),
   
   // Smart go back - goes up one level contextually
   goBack: () => set((state) => {
-    // If viewing a subpage within a submenu, go back to the submenu landing page
-    if (state.expandedSubmenuId && state.currentView !== state.expandedSubmenuId) {
+    // If we have a parentView (e.g. came from More grid), go back to More's grid
+    if (state.parentView && state.currentView !== state.parentView) {
+      return {
+        currentView: state.parentView,
+        activeMenuItem: state.parentView,
+        currentMenu: state.expandedSubmenuId,
+        expandedSubmenuId: state.expandedSubmenuId,
+        expandedNestedSubmenuId: state.parentView,
+        parentView: null
+      };
+    }
+    // If a nested submenu is open, collapse it back to parent submenu
+    if (state.expandedNestedSubmenuId) {
       return {
         currentView: state.expandedSubmenuId,
         activeMenuItem: state.expandedSubmenuId,
         currentMenu: state.expandedSubmenuId,
-        expandedSubmenuId: state.expandedSubmenuId
+        expandedSubmenuId: state.expandedSubmenuId,
+        expandedNestedSubmenuId: null,
+        parentView: null
+      };
+    }
+    // If viewing a subpage within a submenu, collapse the submenu and show its landing page
+    if (state.expandedSubmenuId && state.currentView !== state.expandedSubmenuId) {
+      return {
+        currentView: state.expandedSubmenuId,
+        activeMenuItem: state.expandedSubmenuId,
+        currentMenu: 'main',
+        expandedSubmenuId: null,
+        expandedNestedSubmenuId: null,
+        parentView: null
       };
     }
     // If viewing a submenu landing page (e.g., Work grid), go back to home
@@ -86,8 +145,10 @@ export const useNavigationStore = create((set, get) => ({
       return {
         currentMenu: 'main',
         expandedSubmenuId: null,
+        expandedNestedSubmenuId: null,
         activeMenuItem: null,
-        currentView: 'home'
+        currentView: 'home',
+        parentView: null
       };
     }
     // If viewing a main menu page (not in a submenu), go back to home
@@ -96,7 +157,9 @@ export const useNavigationStore = create((set, get) => ({
         currentView: 'home',
         currentMenu: 'main',
         activeMenuItem: null,
-        expandedSubmenuId: null
+        expandedSubmenuId: null,
+        expandedNestedSubmenuId: null,
+        parentView: null
       };
     }
     // Already at home, do nothing
@@ -121,4 +184,5 @@ export const useNavigationStore = create((set, get) => ({
     // If clicking a different theme, set it and reset inversion
     return { currentTheme: themeName, isThemeInverted: false };
   })
+
 }));

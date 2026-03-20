@@ -165,7 +165,7 @@
 .about-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 28px;
   padding: 20px 17px;
   height: 100%;
   box-sizing: border-box;
@@ -174,7 +174,7 @@
 .about-copy {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 18px;
   max-width: 50%;
 }
 
@@ -631,11 +631,6 @@
 
 .block-item.clickable {
   cursor: pointer;
-}
-
-.block-item.clickable:hover img {
-  transform: scale(1.02);
-  transition: transform 0.2s ease;
 }
 
 .block-item video,

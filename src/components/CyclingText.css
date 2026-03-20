@@ -1,0 +1,18 @@
+.cycling-text-wrapper {
+  /* locks height to tallest suffix — set via inline style */
+}
+
+.cycling-text-container {
+  display: inline;
+}
+
+.cycling-word {
+  display: inline;
+  will-change: opacity;
+}
+
+/* inline-block required for GSAP transform (translate) during FLIP */
+.cycling-period {
+  display: inline-block;
+  will-change: transform;
+}
