@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { resolveUrlToState, pushUrl, replaceUrl, isDeepLink } from '../utils/urlSync';
 
 // Always use light mode (classic theme)
 
@@ -16,11 +17,51 @@ export const useNavigationStore = create((set, get) => ({
   isThemeInverted: false, // Always light mode
   isLandingDismissed: false, // Track if landing page has been dismissed
   
+  // Internal flag: when true, the URL subscriber skips pushing
+  _skipUrlPush: false,
+
   // Landing page actions
   setLandingDismissed: (isDismissed) => set({ isLandingDismissed: isDismissed }),
   
   // Set logo hover state
   setIsHoveringLogo: (isHovering) => set({ isHoveringLogo: isHovering }),
+
+  // Initialise navigation state from the current URL (called once on mount).
+  // Returns true if a deep link was resolved (so the caller can skip the landing overlay).
+  initFromUrl: () => {
+    const navState = resolveUrlToState(window.location.pathname);
+    if (navState) {
+      set({ ...navState, _skipUrlPush: true, isLandingDismissed: true });
+      // Replace (don't push) so we don't double the history entry
+      replaceUrl(navState.currentView);
+      // Reset the flag after the synchronous subscriber fires
+      setTimeout(() => set({ _skipUrlPush: false }), 0);
+      return true;
+    }
+    return false;
+  },
+
+  // Listen for browser back / forward and update store accordingly
+  setupPopstateListener: () => {
+    const handler = (event) => {
+      const navState = resolveUrlToState(window.location.pathname);
+      // Use _skipUrlPush so the subscriber doesn't push the URL back
+      set({
+        ...(navState || {
+          currentView: 'home',
+          currentMenu: 'main',
+          activeMenuItem: null,
+          expandedSubmenuId: null,
+          expandedNestedSubmenuId: null,
+          parentView: null
+        }),
+        _skipUrlPush: true
+      });
+      setTimeout(() => set({ _skipUrlPush: false }), 0);
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  },
   
   // Navigation actions
   navigateToHome: () => set({
@@ -186,3 +227,19 @@ export const useNavigationStore = create((set, get) => ({
   })
 
 }));
+
+// ── URL sync: push URL whenever currentView changes ──
+let prevView = useNavigationStore.getState().currentView;
+useNavigationStore.subscribe((state) => {
+  if (state.currentView !== prevView) {
+    prevView = state.currentView;
+    if (!state._skipUrlPush) {
+      pushUrl(state.currentView);
+    }
+  }
+});
+
+// ── Resolve deep-link BEFORE first React render ──
+// This must run at module level so isLandingDismissed is already true
+// when LandingOverlay mounts.
+useNavigationStore.getState().initFromUrl();

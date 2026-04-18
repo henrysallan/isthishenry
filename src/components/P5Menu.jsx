@@ -273,7 +273,7 @@ function P5Menu() {
         p.strokeWeight(1.5);
         p.noFill();
         // Diagonal arrow pointing to upper-left corner (matches ReturnArrow)
-        const size = 4;
+        const size = 7;
         // Diagonal line from bottom-right to top-left
         p.line(size, size, -size, -size);
         // Arrowhead: horizontal arm and vertical arm at the top-left
@@ -963,7 +963,7 @@ function P5Menu() {
         }
         // Check back button
         if (animState.backButton.scale > 0.3) {
-          if (isPointInRect(mx, my, animState.backButton.x - 12, animState.backButton.y, 24, 20)) {
+          if (isPointInRect(mx, my, animState.backButton.x - 18, animState.backButton.y, 36, 32)) {
             isHovering = true;
           }
         }

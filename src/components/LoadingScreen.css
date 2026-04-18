@@ -1,0 +1,27 @@
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s ease-out;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-screen .loading-number {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.08);
+  line-height: 1;
+  user-select: none;
+}

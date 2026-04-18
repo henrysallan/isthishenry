@@ -112,7 +112,7 @@ function P5Menu() {
     let x;
     switch (menuLevel) {
       case 'submenu': x = getMenuX() + depthSep; break;
-      case 'nested': x = getMenuX() + depthSep + (isMobile() ? 80 : 200); break;
+      case 'nested': x = getMenuX() + depthSep + (isMobile() ? 130 : 200); break;
       default: x = getMenuX();
     }
     return { x, y: startY + itemIndex * spacing };
@@ -292,7 +292,7 @@ function P5Menu() {
 
     // Back button
     if (anim.backButton.scale > 0.3) {
-      const backSize = isMobile() ? 40 : 24;
+      const backSize = isMobile() ? 48 : 36;
       if (isPointInRect(mx, my, anim.backButton.x - backSize / 2, anim.backButton.y, backSize, backSize)) {
         state.goBack();
         return;
@@ -429,7 +429,7 @@ function P5Menu() {
     const opacity = hovered ? 1 : 0.59;
     ctx.strokeStyle = withAlpha(col, opacity);
     ctx.lineWidth = 1.5;
-    const size = 4;
+    const size = 7;
     // Diagonal line
     ctx.beginPath();
     ctx.moveTo(size, size);
@@ -509,7 +509,7 @@ function P5Menu() {
       const depthSep = isMobile()
         ? theme.spatial.menuDepthSeparation * 25
         : theme.spatial.menuDepthSeparation * 50;
-      const nestedOffset = isMobile() ? 80 : 360;
+      const nestedOffset = isMobile() ? 255 : 360;
       const submenuX = getMenuX() + depthSep;
       const nestedX = submenuX + nestedOffset;
       let maxNestedTextW = 0;
@@ -1031,7 +1031,7 @@ function P5Menu() {
       }
     }
     if (anim.backButton.scale > 0.3) {
-      const backSize = isMobile() ? 40 : 24;
+      const backSize = isMobile() ? 48 : 36;
       if (isPointInRect(mx, my, anim.backButton.x - backSize / 2, anim.backButton.y, backSize, backSize)) {
         isHovering = true;
       }

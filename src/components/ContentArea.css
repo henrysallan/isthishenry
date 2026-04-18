@@ -171,6 +171,41 @@
   box-sizing: border-box;
 }
 
+.about-text-block {
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.about-text-block p {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(13px, 1.1vw, 17px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0 0 1.8em 0;
+}
+
+.about-text-block p:last-child {
+  margin-bottom: 0;
+}
+
+.about-text-block li {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(13px, 1.1vw, 17px);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin: 0 0 0.4em 0;
+  margin-left: 1.5em;
+  list-style: decimal;
+}
+
+.about-text-block li:last-of-type {
+  margin-bottom: 1.8em;
+}
+
 .about-copy {
   display: flex;
   flex-direction: column;
@@ -202,13 +237,14 @@
 
 .about-media {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
+  max-width: 100%;
   gap: 10px;
 }
 
 .about-media-item {
-  width: 100%;
-  aspect-ratio: 603 / 344;
+  width: 30%;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background: var(--color-text);
   opacity: 0.08;
@@ -301,6 +337,7 @@
 }
 
 .about-link:hover {
+  color: var(--color-text);
   opacity: 0.7;
 }
 
@@ -504,6 +541,15 @@
   line-height: 1.2;
 }
 
+a.project-card-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a.project-card-link:hover {
+  opacity: 0.7;
+}
+
 .project-card-desc {
   font-family: 'Inter', sans-serif;
   font-size: clamp(11px, 1.1vw, 14px);
@@ -518,12 +564,24 @@
   flex-shrink: 0;
   overflow: hidden;
   border-radius: 4px;
+  aspect-ratio: 16 / 10;
 }
 
 .project-card-image img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
   display: block;
+}
+
+.project-card-image .progressive-image-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.project-card-image .image-placeholder {
+  padding-bottom: 0;
+  height: 100%;
 }
 
 /* Responsive - Mobile layout */
@@ -553,7 +611,7 @@
   }
 
   .about-media {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .about-footer {
@@ -630,6 +688,24 @@
 }
 
 .block-item.clickable {
+  cursor: pointer;
+}
+
+.block-item.block-text {
+  padding: 24px 0;
+}
+
+.block-item.block-text p {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(40px, 1.8vw, 24px);
+  font-weight: 800;
+  color: var(--color-text);
+  opacity: 1.0;
+  line-height: 0.9;
+  margin: 0;
+}
+
+.project-card-image.clickable {
   cursor: pointer;
 }
 

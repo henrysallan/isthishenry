@@ -11,52 +11,74 @@ function getAllAssetUrls() {
   // Home reel (highest priority)
   urls.videos.add('https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4');
 
-  // Extract from work items
+  // Extract from work items (recursively walks submenus)
   const workMenu = navigationData.mainMenu.find(item => item.id === 'work');
   if (workMenu?.submenu) {
-    workMenu.submenu.forEach(item => {
-      const content = item.content;
-      
-      // Thumbnails (priority - shown in grid)
-      if (content?.thumbnail) {
-        if (isVideo(content.thumbnail)) {
-          urls.videos.add(content.thumbnail);
-        } else {
-          urls.images.add(content.thumbnail);
-        }
-      }
-
-      // Main video
-      if (content?.videoUrl) {
-        urls.videos.add(content.videoUrl);
-      }
-
-      // Video gallery
-      if (content?.videoGallery?.videos) {
-        content.videoGallery.videos.forEach(url => urls.videos.add(url));
-      }
-
-      // Image gallery
-      if (content?.imageGallery) {
-        const baseUrl = content.imageGallery.baseUrl;
-        content.imageGallery.images.forEach(img => {
-          urls.images.add(`${baseUrl}${img}`);
-        });
-      }
-
-      // Media gallery (mixed)
-      if (content?.mediaGallery) {
-        const baseUrl = content.mediaGallery.baseUrl;
-        content.mediaGallery.items.forEach(item => {
-          const url = `${baseUrl}${item}`;
-          if (isVideo(item)) {
-            urls.videos.add(url);
+    const walkItems = (items) => {
+      items.forEach(item => {
+        const content = item.content;
+        
+        // Thumbnails (priority - shown in grid)
+        if (content?.thumbnail) {
+          if (isVideo(content.thumbnail)) {
+            urls.videos.add(content.thumbnail);
           } else {
-            urls.images.add(url);
+            urls.images.add(content.thumbnail);
           }
-        });
-      }
-    });
+        }
+
+        // Main video
+        if (content?.videoUrl) {
+          urls.videos.add(content.videoUrl);
+        }
+
+        // Blocks
+        if (content?.blocks) {
+          const baseUrl = content.baseUrl || '';
+          content.blocks.forEach(block => {
+            if (block.type === 'text' || !block.src) return;
+            const fullSrc = block.src.startsWith('http') ? block.src : `${baseUrl}${block.src}`;
+            if (isVideo(block.src) || block.type === 'video') {
+              urls.videos.add(fullSrc);
+            } else if (block.type === 'image') {
+              urls.images.add(fullSrc);
+            }
+          });
+        }
+
+        // Video gallery
+        if (content?.videoGallery?.videos) {
+          content.videoGallery.videos.forEach(url => urls.videos.add(url));
+        }
+
+        // Image gallery
+        if (content?.imageGallery) {
+          const baseUrl = content.imageGallery.baseUrl;
+          content.imageGallery.images.forEach(img => {
+            urls.images.add(`${baseUrl}${img}`);
+          });
+        }
+
+        // Media gallery (mixed)
+        if (content?.mediaGallery) {
+          const baseUrl = content.mediaGallery.baseUrl;
+          content.mediaGallery.items.forEach(mediaItem => {
+            const url = `${baseUrl}${mediaItem}`;
+            if (isVideo(mediaItem)) {
+              urls.videos.add(url);
+            } else {
+              urls.images.add(url);
+            }
+          });
+        }
+
+        // Recurse into nested submenus
+        if (item.submenu) {
+          walkItems(item.submenu);
+        }
+      });
+    };
+    walkItems(workMenu.submenu);
   }
 
   return {

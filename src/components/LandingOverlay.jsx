@@ -127,6 +127,8 @@ function LandingOverlay() {
   const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
   const isDismissed = useNavigationStore(state => state.isLandingDismissed);
   const setLandingDismissed = useNavigationStore(state => state.setLandingDismissed);
+  // If the overlay was already dismissed before mount (deep link), skip rendering entirely
+  const skippedOnMount = useRef(isDismissed === true);
   const activeColors = colorThemes[currentTheme];
   
   // Calculate theme colors (same logic as rest of site)
@@ -1433,6 +1435,9 @@ function LandingOverlay() {
     
     return path;
   }, [bezierPoints]);
+
+  // Deep-link: overlay was already dismissed before this component mounted — render nothing
+  if (skippedOnMount.current) return null;
 
   return (
     <div 

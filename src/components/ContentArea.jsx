@@ -11,30 +11,30 @@ import CyclingText from './CyclingText';
 import Lightbox from './Lightbox';
 import './ContentArea.css';
 
-// Collect all video URLs from navigation data for the about page showcase
-function collectAllVideoUrls() {
-  const urls = [];
+// Collect all media URLs from the Sketches section for the about page showcase
+function collectSketchesMedia() {
+  const media = [];
   const walk = (items) => {
     if (!items) return;
     for (const item of items) {
-      const content = item.content;
-      if (content?.blocks) {
-        const baseUrl = content.baseUrl || '';
-        for (const block of content.blocks) {
-          if (block.type === 'video') {
-            const src = block.src.startsWith('http') ? block.src : `${baseUrl}${block.src}`;
-            urls.push(src);
-          }
+      if (item.id === 'sketches' && item.content?.blocks) {
+        const baseUrl = item.content.baseUrl || '';
+        for (const block of item.content.blocks) {
+          if (!block.src) continue;
+          const src = block.src.startsWith('http') ? block.src : `${baseUrl}${block.src}`;
+          const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(src);
+          media.push({ src, type: isVideo ? 'video' : 'image' });
         }
+        return;
       }
       if (item.submenu) walk(item.submenu);
     }
   };
   walk(navigationData.mainMenu);
-  return urls;
+  return media;
 }
 
-const ALL_VIDEO_URLS = collectAllVideoUrls();
+const SKETCHES_MEDIA = collectSketchesMedia();
 
 // Shuffles array in place (Fisher-Yates)
 function shuffle(arr) {
@@ -46,22 +46,14 @@ function shuffle(arr) {
   return a;
 }
 
-const CYCLE_INTERVAL = 6000; // ms between video swaps
+const CYCLE_INTERVAL = 800; // ms between video swaps
 
-// A single about-page media slot that cycles through random project videos
-function AboutMediaSlot({ slotIndex }) {
-  const [shuffled] = useState(() => {
-    const s = shuffle(ALL_VIDEO_URLS);
-    if (slotIndex === 1) {
-      const half = Math.floor(s.length / 2);
-      return [...s.slice(half), ...s.slice(0, half)];
-    }
-    return s;
-  });
+// A single about-page media slot that cycles through sketches assets (images + videos)
+function AboutMediaSlot() {
+  const [shuffled] = useState(() => shuffle(SKETCHES_MEDIA));
   const indexRef = useRef(0);
-  // Double-buffer: two video elements, swap which is on top
   const [active, setActive] = useState(0); // 0 or 1
-  const [srcs, setSrcs] = useState([shuffled[0] || '', '']);
+  const [items, setItems] = useState([shuffled[0] || null, null]);
   const videoRefs = [useRef(null), useRef(null)];
   const timerRef = useRef(null);
 
@@ -70,26 +62,38 @@ function AboutMediaSlot({ slotIndex }) {
     return indexRef.current;
   };
 
-  // Preload next video into the back buffer, swap when ready
+  // Preload next item into the back buffer, swap when ready
   const queueNext = useCallback(() => {
     const next = nextIndex();
     const backIdx = active === 0 ? 1 : 0;
-    setSrcs(prev => {
+    const nextItem = shuffled[next];
+    setItems(prev => {
       const copy = [...prev];
-      copy[backIdx] = shuffled[next];
+      copy[backIdx] = nextItem;
       return copy;
     });
 
-    const backVideo = videoRefs[backIdx].current;
-    if (backVideo) {
-      backVideo.load();
-
-      const onReady = () => {
-        backVideo.removeEventListener('canplaythrough', onReady);
-        backVideo.play().catch(() => {});
-        setActive(backIdx);
+    if (nextItem.type === 'video') {
+      // Wait for video to be ready
+      const checkVideo = () => {
+        const backVideo = videoRefs[backIdx].current;
+        if (backVideo) {
+          backVideo.load();
+          const onReady = () => {
+            backVideo.removeEventListener('canplaythrough', onReady);
+            backVideo.play().catch(() => {});
+            setActive(backIdx);
+          };
+          backVideo.addEventListener('canplaythrough', onReady);
+        }
       };
-      backVideo.addEventListener('canplaythrough', onReady);
+      // Small delay to let React render the new src
+      setTimeout(checkVideo, 50);
+    } else {
+      // Preload image then swap
+      const img = new Image();
+      img.onload = () => setActive(backIdx);
+      img.src = nextItem.src;
     }
   }, [active, shuffled]);
 
@@ -100,31 +104,28 @@ function AboutMediaSlot({ slotIndex }) {
     return () => clearInterval(timerRef.current);
   }, [queueNext, shuffled]);
 
-  // Play the initial video
+  // Play the initial video if first item is video
   useEffect(() => {
-    const v = videoRefs[0].current;
-    if (v) v.play().catch(() => {});
+    if (items[0]?.type === 'video') {
+      const v = videoRefs[0].current;
+      if (v) v.play().catch(() => {});
+    }
   }, []);
+
+  const renderLayer = (idx) => {
+    const item = items[idx];
+    if (!item) return null;
+    const cls = `about-video-layer ${active === idx ? 'front' : 'back'}`;
+    if (item.type === 'video') {
+      return <video ref={videoRefs[idx]} src={item.src} muted loop playsInline autoPlay className={cls} />;
+    }
+    return <img src={item.src} alt="Sketch" className={cls} />;
+  };
 
   return (
     <div className="about-media-item loaded">
-      <video
-        ref={videoRefs[0]}
-        src={srcs[0]}
-        muted
-        loop
-        playsInline
-        autoPlay
-        className={`about-video-layer ${active === 0 ? 'front' : 'back'}`}
-      />
-      <video
-        ref={videoRefs[1]}
-        src={srcs[1]}
-        muted
-        loop
-        playsInline
-        className={`about-video-layer ${active === 1 ? 'front' : 'back'}`}
-      />
+      {renderLayer(0)}
+      {renderLayer(1)}
     </div>
   );
 }
@@ -679,6 +680,18 @@ function ContentArea() {
     
     // Projects page – 2-per-row card grid
     if (contentData.isProjectsPage && contentData.projects) {
+      const projectMedia = contentData.projects
+        .filter(p => p.image || p.video)
+        .map((p, idx) => {
+          if (p.video) return { src: p.video, type: 'video', alt: p.title };
+          return { src: p.image, type: 'image', alt: p.title };
+        });
+
+      const openProjectLightbox = (index) => {
+        setLightboxItems(projectMedia);
+        setLightboxIndex(index);
+      };
+
       return (
         <div className="projects-page">
           <div className="page-header">
@@ -688,11 +701,19 @@ function ContentArea() {
             {contentData.projects.map((project, index) => (
               <div key={index} className="project-card">
                 <div className="project-card-text">
-                  <span className="project-card-title">{project.title}</span>
+                  {project.link ? (
+                    <a href={project.link} target="_blank" rel="noopener noreferrer" className="project-card-title project-card-link">{project.title}</a>
+                  ) : (
+                    <span className="project-card-title">{project.title}</span>
+                  )}
                   <span className="project-card-desc">{project.description}</span>
                 </div>
-                <div className="project-card-image">
-                  <ProgressiveImage src={project.image} alt={project.title} />
+                <div className="project-card-image clickable" onClick={() => openProjectLightbox(index)}>
+                  {project.video ? (
+                    <LazyVideo src={project.video} />
+                  ) : (
+                    <ProgressiveImage src={project.image} alt={project.title} />
+                  )}
                 </div>
               </div>
             ))}
@@ -725,6 +746,45 @@ function ContentArea() {
     
     // About page – custom layout
     if (contentData.isAboutPage) {
+      // If aboutText is set, render a simple text block instead of the full layout
+      if (contentData.aboutText) {
+        // Group paragraphs: consecutive numbered items get wrapped in a single <ol>
+        const paragraphs = contentData.aboutText.split('\n\n').map(p => p.trim()).filter(Boolean);
+        const elements = [];
+        let listBuffer = [];
+
+        const flushList = () => {
+          if (listBuffer.length > 0) {
+            elements.push(
+              <ol key={`ol-${elements.length}`}>
+                {listBuffer.map((text, j) => <li key={j}>{text}</li>)}
+              </ol>
+            );
+            listBuffer = [];
+          }
+        };
+
+        for (const paragraph of paragraphs) {
+          if (/^\d+\.\s/.test(paragraph)) {
+            listBuffer.push(paragraph.replace(/^\d+\.\s/, ''));
+          } else {
+            flushList();
+            elements.push(<p key={`p-${elements.length}`}>{paragraph}</p>);
+          }
+        }
+        flushList();
+
+        return (
+          <div className="about-page">
+            <div className="about-text-block">
+              {elements}
+            </div>
+          </div>
+        );
+      }
+
+      // Original about layout (cycling text, media carousel, skills footer)
+      // Preserved for future use – remove the aboutText field from navigation data to re-enable
       return (
         <div className="about-page">
           <div className="about-copy">
@@ -741,8 +801,7 @@ function ContentArea() {
           </div>
 
           <div className="about-media">
-            <AboutMediaSlot slotIndex={0} />
-            <AboutMediaSlot slotIndex={1} />
+            <AboutMediaSlot />
           </div>
 
           <div className="about-footer">
@@ -811,6 +870,7 @@ function ContentArea() {
           // Build flat media list for lightbox navigation
           const mediaItems = contentData.blocks
             .map((block) => {
+              if (block.type === 'text' || !block.src) return null;
               const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
               const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
               const isVimeo = block.type === 'vimeo';
@@ -828,6 +888,18 @@ function ContentArea() {
           return (
             <div className="blocks-grid">
               {contentData.blocks.map((block, index) => {
+                const isText = block.type === 'text';
+                if (isText) {
+                  return (
+                    <div
+                      key={index}
+                      className="block-item block-text"
+                      style={{ gridColumn: `${block.colStart} / span ${block.colSpan}` }}
+                    >
+                      <p>{block.content}</p>
+                    </div>
+                  );
+                }
                 const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
                 const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
                 const isVimeo = block.type === 'vimeo';
