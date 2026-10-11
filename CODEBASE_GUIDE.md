@@ -111,7 +111,7 @@ All site content lives in this one hand-maintained JS object. Five modules read 
 | [Lightbox.jsx](src/components/Lightbox.jsx) (+ css 142) | 174 | Fullscreen media viewer with keyboard nav and HLS |
 | [theme.js](src/config/theme.js) | 86 | 6 color themes (only `classic` is used) plus layout constants |
 | [App.jsx](src/App.jsx) | 79 | Layer composition, theme CSS variables, preloader kickoff |
-| [ReturnArrow.jsx](src/components/ReturnArrow.jsx), [LoadingScreen.jsx](src/components/LoadingScreen.jsx), [LoadingSpinner.jsx](src/components/LoadingSpinner.jsx), [HomeTextOverlay.jsx](src/components/HomeTextOverlay.jsx) | <70 each | Small UI pieces. HomeTextOverlay renders the site name as plain text |
+| [ReturnArrow.jsx](src/components/ReturnArrow.jsx), [LoadingSpinner.jsx](src/components/LoadingSpinner.jsx), [HomeTextOverlay.jsx](src/components/HomeTextOverlay.jsx) | <70 each | Small UI pieces. HomeTextOverlay renders the site name as plain text |
 | [videoStreaming.jsx](src/utils/videoStreaming.jsx), [r2.js](src/config/r2.js) | 36 | R2 URL helpers. Only reached through the unused `videoKey` path |
 | [urlSync.test.js](src/utils/urlSync.test.js), [navigationStore.test.js](src/store/navigationStore.test.js) | — | Characterization tests (21). They derive routes from `navigation.js`, so content edits don't break them |
 
