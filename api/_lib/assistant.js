@@ -5,14 +5,44 @@ import { navigationData } from '../../src/data/navigation.js';
 import { siteIndex } from '../../src/utils/siteIndex.js';
 import { stateToUrl } from '../../src/utils/urlSync.js';
 
-// Placeholder bio, written only from what the site already says. Replace it
-// with your own words; anything not here or in the page list is off limits to
-// the assistant.
-const ABOUT_HENRY = `Henry Allan is a designer based in New York City who works with brands in tech and art. His work spans motion, 3D, brand and visual design, generative design, UI/UX and vibe coding: building interactive web projects with AI tools. He works in Blender, After Effects, Houdini, Cavalry and Figma.
+// Henry's professional profile. Along with the page list, this is everything the
+// assistant may say; anything else is off limits.
+const ABOUT_HENRY = `Henry Allan: professional profile
 
-His client work includes Expensify (3D and 2D brand work, including 24 assets for the Barclays Center Nets takeover and assets for Apple's F1 game and movie partnership), Kalshi (VFX for Kalshi's top markets, from strategy through 3D/2D execution), MSCHF, IT Cosmetics, Worksuite, Welcome Jpeg and Smokeye Hill. Past: vmgroupe, Kalshi and MSCHF.
+At a glance
+- Role: Senior Motion Designer, Brand at Brex (since September 2026)
+- Discipline: motion designer and creative technologist working across brand identity motion, 3D, procedural and generative systems, and custom tooling
+- Based in: Brooklyn, NY
+- Web: isthishenry.com and toolbox.design
+- Education: BA in Philosophy and Studio Art, Kenyon College (2023); LaGuardia High School
+- Approach: thinks in systems and principles rather than one-off executions, and often builds the tools that produce the work
 
-Alongside client work he builds his own projects, including Poetry Map, Codex-Image, Codex-Book, Playspace.life and CatLand. The site also links to Book (book.isthishenry.com) and Toolbox (toolbox.design).
+The story
+Henry came to motion and 3D sideways. He studied philosophy and studio art at Kenyon College on a merit Studio Art scholarship, while teaching himself 3D, simulation, motion, and real-time tools. At Kenyon he managed the college's 3D Lab, led a small team of student assistants, and received an Ohio Five CODEX grant for VR applications in art history research. He was also a Gravity Sketch Student Ambassador.
+
+He began freelancing in 2021, doing visual effects, 3D environments, and creative direction for artists and independent clients. That work includes Areyouwinningson (2022), shown at the Institute of Modern Art Brisbane, and Blade Study (2024) with artist Bill Williams. After graduating he freelanced at MSCHF.
+
+From 2023 to 2025 he worked as a 3D and motion designer with VMGroupe, creating brand and campaign work for clients including L'Oréal, IT Cosmetics, Perrier-Jouët, Sotheby's, and Cointreau.
+
+In 2025 he joined The Collected Works, a brand and web design studio in Tribeca, as a motion and brand designer. The studio's focus on systems thinking and on bringing new technology into the design process sharpened an idea that runs through his work: brand systems increasingly behave like software, and the roles of designer and engineer are converging.
+
+In September 2026 he joined Brex as its brand motion designer.
+
+Independent work
+- Toolbox (toolbox.design): a browser-based, node-graph motion graphics tool built on WebGPU, developed with a collaborator.
+- Poetrymap: an interactive piece that turns poems into navigable 3D maps of meaning, using text embeddings.
+- Data visualization: a procedural, animated poster built from real-world data and cartography.
+- Experiments: Gaussian splatting portraiture, Blender tools and addons, WebGPU sketches, and small apps.
+
+Tools
+- Motion and 3D: After Effects, Cavalry, Cinema 4D, Blender (including geometry nodes and simulation), Octane, Unreal Engine, EmberGen, Gravity Sketch, photogrammetry
+- Design: Figma, Photoshop, Illustrator, Premiere
+- Color: DaVinci Resolve, ACES and AgX workflows
+- Sound: Logic, Ableton, Serum
+- Code: builds web tools and prototypes with AI-assisted development
+
+Through-line
+Across client work and personal projects, Henry favors systems over one-offs: procedural and generative work, motion languages rather than single animations, and tools that let other people create. He pairs this with craft roots and a philosophy background that shapes how he frames ideas. Long term, he is working toward strategic creative leadership while staying hands-on.
 
 Contact: isthishenry@gmail.com. LinkedIn: linkedin.com/in/henryallan. Instagram: @isthishenry.`;
 
