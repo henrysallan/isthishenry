@@ -226,6 +226,22 @@ export const navigationData = {
           },
           submenu: [
             {
+              id: 'iraq-war-civ-casualties',
+              title: 'Iraq War Civ Casualties',
+              type: 'page',
+              content: {
+                title: 'Iraq War Civ Casualties',
+                year: '2026',
+                tags: 'Motion',
+                description: '',
+                thumbnail: 'https://cdn.isthishenry.com/iraq/IraqWarCivCasualties_bright.mov',
+                blocks: [
+                  { type: 'video', src: 'https://cdn.isthishenry.com/iraq/IraqWarCivCasualties_bright.mov', colSpan: 12, colStart: 1 },
+                  { type: 'image', src: 'https://cdn.isthishenry.com/iraq/Screenshot%202026-04-30%20135149.png', colSpan: 12, colStart: 1 }
+                ]
+              }
+            },
+            {
               id: 'guardrails-ai',
               title: 'Guardrails AI',
               type: 'page',
