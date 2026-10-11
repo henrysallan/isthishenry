@@ -1,30 +1,32 @@
-/* Google Fonts fallback - loaded via CSS for HTML content */
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-
-/* Self-hosted fonts as primary (faster, same-origin) */
+/* Inter, self-hosted (license: assets/fonts/OFL.txt), Latin subsets.
+   The variable face (Google Fonts' latin build: wght 100-900 + opsz) renders
+   500/600/800. Static Regular and Bold are declared after it so they win for
+   400 and 700, the same split the site had with Google Fonts + the TTFs. */
 @font-face {
   font-family: 'Inter';
-  src: url('/font/Inter-Regular.ttf') format('truetype');
+  src: url('./assets/fonts/Inter-Variable-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2190-21FF, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 @font-face {
   font-family: 'Inter';
-  src: url('/font/Inter_Bold.ttf') format('truetype');
+  src: url('./assets/fonts/Inter-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-}
-
-/* Legacy alias for existing code */
-@font-face {
-  font-family: 'Inter Bold';
-  src: url('/font/Inter_Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2190-21FF, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 :root {

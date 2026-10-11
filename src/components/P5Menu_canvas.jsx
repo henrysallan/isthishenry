@@ -185,15 +185,13 @@ function P5Menu() {
     canvas._sizeCanvas = sizeCanvas;
     sizeCanvas();
 
-    // Load font via FontFace API
+    // Load Inter Bold through the @font-face rules in index.css
     const anim = animRef.current;
-    const fontFace = new FontFace('InterBold', 'url(/font/Inter_Bold.ttf)');
-    fontFace.load().then((loaded) => {
-      document.fonts.add(loaded);
+    document.fonts.load('bold 20px Inter').then(() => {
       textWidthCache.clear();
       anim.fontReady = true;
     }).catch(() => {
-      // Fallback to CSS Inter
+      // Draw with the fallback font
       textWidthCache.clear();
       anim.fontReady = true;
     });
@@ -305,7 +303,7 @@ function P5Menu() {
     const my = rawY;
     const fontSize = isMobile() ? 16 : 20;
     const hitHeight = isMobile() ? 40 : fontSize + 8;
-    ctx.font = `bold ${fontSize}px InterBold, Inter, sans-serif`;
+    ctx.font = `bold ${fontSize}px Inter, sans-serif`;
 
     const state = useNavigationStore.getState();
     const mainMenu = navigationData.mainMenu.filter(m => !m.hidden);
@@ -523,7 +521,7 @@ function P5Menu() {
     const mainMenu = navigationData.mainMenu.filter(m => !m.hidden);
     const fontSize = isMobile() ? 16 : 20;
     const hitHeight = isMobile() ? 40 : fontSize + 8;
-    ctx.font = `bold ${fontSize}px InterBold, Inter, sans-serif`;
+    ctx.font = `bold ${fontSize}px Inter, sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
 

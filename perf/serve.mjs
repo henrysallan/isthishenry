@@ -38,7 +38,6 @@ const cache = new Map();
 
 function cacheControl(urlPath) {
   if (urlPath.startsWith('/assets/')) return 'public, max-age=31536000, immutable';
-  if (urlPath.startsWith('/font/')) return 'public, max-age=604800, stale-while-revalidate=86400';
   return 'public, max-age=0, must-revalidate';
 }
 

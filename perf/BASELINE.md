@@ -8,6 +8,7 @@ Re-run the same measurements after each area and add a column, so every change h
 |---|---|---|
 | C (render loops) | 2026-10-11 | Idle React commits went from 2 per frame to **0**. JS went from 474 to **230 KB brotli** (p5 removed with the logo animation). |
 | B (bundle) | 2026-10-11 | hls.js now loads only on pages with Vimeo streams. The JS every page loads went from 230 to **101 KB brotli**. |
+| E (fonts) | 2026-10-11 | Fonts went from 738 KB of TTFs + ~76 KB from Google Fonts to **118 KB of self-hosted WOFF2**. No third-party font requests; text widths are unchanged at every weight. |
 
 ---
 
@@ -27,7 +28,7 @@ From `npm run perf:weight` (raw data: [results/baseline-weight.json](results/bas
 |---|---|---|---|
 | JS loaded on every page | **1,908 KB** raw / 572 KB gzip / **474 KB brotli**, 1 chunk | **876 KB** raw / 273 KB gzip / **230 KB brotli** | **368 KB** raw / 117 KB gzip / **101 KB brotli** |
 | JS loaded on demand | none | none | hls.js: 510 KB raw / 130 KB brotli, only on pages with `.m3u8` streams (currently Smokeye Hill) |
-| Fonts | 738 KB raw / 283 KB brotli (2 TTFs) | same | same |
+| Fonts | 738 KB raw / 283 KB brotli (2 TTFs), plus Google Fonts CSS (5 KB) and a 71 KB variable WOFF2 | same | same → **after E: 118 KB** (3 self-hosted WOFF2: variable 73 KB, Regular 27 KB, Bold 21 KB) |
 | CDN media referenced | 150 files, **2,201 MB** | same | same |
 | Images over 5 MB | **57** (largest 23 MB) | same | same |
 | CDN files with `Cache-Control` | **0 / 150** | same | same |

@@ -1498,7 +1498,7 @@ function LandingOverlay() {
               padding: '10px',
               marginTop: '5px',
               maxWidth: '600px',
-              fontFamily: "'Inter Bold', Inter, sans-serif",
+              fontFamily: "'Inter', sans-serif",
               fontWeight: 700,
               fontSize: isMobile ? '33px' : '48px',
               lineHeight: 1,

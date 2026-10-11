@@ -2,7 +2,7 @@
 
 _First mapped 2026-10-10. This is the starting point for optimization work, one area at a time. Update it as areas get done._
 
-**Progress:** ✅ K (2026-10-10) · ✅ Baseline recorded in [perf/BASELINE.md](perf/BASELINE.md) (Lighthouse still pending) · ✅ C (2026-10-11) · ✅ B (2026-10-11)
+**Progress:** ✅ K (2026-10-10) · ✅ Baseline recorded in [perf/BASELINE.md](perf/BASELINE.md) (Lighthouse still pending) · ✅ C (2026-10-11) · ✅ B (2026-10-11) · ✅ E (2026-10-11) · ⏭️ A deferred (videos moving to FrameRate)
 
 > ⚠️ **Live site:** every deep link (`/work`, `/about`, case studies) returns 404 in production, because `vercel.json` isn't deployed. See [perf/BASELINE.md §0](perf/BASELINE.md).
 
@@ -21,7 +21,7 @@ _First mapped 2026-10-10. This is the starting point for optimization work, one 
 | JS bundle | **1.95 MB min / 587 KB gzip / 474 KB brotli** (what Vercel serves), one chunk, no code splitting |
 | p5 and its transitive deps (acorn, escodegen, i18next, colorjs, pako…) | **~1.0 MB** of that, used only by the "Henry Allan" logo. *Removed in C: JS is now 876 KB raw / 230 KB brotli* |
 | hls.js | 510 KB, used only for the 7 Vimeo `.m3u8` blocks |
-| Fonts | 2 TTFs (755 KB). Declared about 6 different ways, and Google Fonts Inter is loaded on top |
+| Fonts | 2 TTFs (755 KB). Declared about 6 different ways, and Google Fonts Inter is loaded on top. *Since E: 118 KB of self-hosted WOFF2* |
 | Media referenced in `navigation.js` | **150 CDN files, 2.2 GB total** |
 | Images | 114 files, about 940 MB. **57 are over 5 MB** (PNGs up to 23 MB) |
 | Home reel | **280 MB** MP4, autoplayed on `/` |
@@ -34,7 +34,7 @@ _First mapped 2026-10-10. This is the starting point for optimization work, one 
 
 ## 2. How the app boots
 
-1. [index.html](index.html) preloads both TTFs, `@import`s Google Fonts Inter inside a `<style>` block, and preconnects to the CDN.
+1. [index.html](index.html) preloads the three self-hosted Inter WOFF2 files (their faces are declared in `index.css`) and preconnects to the CDN.
 2. [src/main.jsx](src/main.jsx) renders `<App>` in StrictMode.
 3. Importing [navigationStore.js](src/store/navigationStore.js) runs `initFromUrl()` **at module level** ([navigationStore.js:245](src/store/navigationStore.js:245)). A deep link sets the state and marks the landing overlay as dismissed before the first render.
 4. [App.jsx](src/App.jsx) mounts **every layer at once**, with nothing lazy loaded: menu canvas, content area, logo, cursor, landing overlay, return arrow, loading screen.
@@ -133,7 +133,7 @@ All of this is recoverable from git history (last commit before removal: `e870ec
 
 The areas are ordered by expected impact. Each one is meant to be a self-contained work session.
 
-### A. Media pipeline & CDN 🔴 *highest impact*
+### A. Media pipeline & CDN ⏭️ *deferred: videos are moving to FrameRate*
 **Where:** [navigation.js](src/data/navigation.js), [preloader.js](src/utils/preloader.js), the R2 bucket, the `WorkList` / `LazyVideo` / `ProgressiveImage` components in [ContentArea.jsx](src/components/ContentArea.jsx)
 
 - **The preloader downloads nearly everything.** All 111 Work images (~928 MB) are fetched in full, 4 at a time, on every visit. The first 9 videos (388 MB) are also given `preload="auto"`. This competes with the reel and with whatever page the visitor is actually looking at.
@@ -144,6 +144,7 @@ The areas are ordered by expected impact. Each one is meant to be a self-contain
 - **R2 sends no `Cache-Control`**, so repeat visits revalidate or refetch.
 - The retry logic adds cache-busting query strings (`?_retry=n`), which defeats CDN caching on the very retries meant to help.
 - **To decide:** an encoding pipeline (script vs. a service), thumbnail and poster conventions, and whether to keep any preloading at all. A likely option is to preload only the next likely click.
+- **Status (2026-10-11):** deferred because video is moving to FrameRate. Two parts stay in this repo either way and could be done on their own: the oversized images (57 over 5 MB, served from R2) and the preloader in `src/utils/preloader.js`, which fully downloads every Work image (about 928 MB) on every visit.
 
 ### B. JS bundle & dependencies ✅ *done 2026-10-11*
 **Where:** [loadHls.js](src/utils/loadHls.js), [ContentArea.jsx](src/components/ContentArea.jsx), [Lightbox.jsx](src/components/Lightbox.jsx), [package.json](package.json)
@@ -187,16 +188,22 @@ The areas are ordered by expected impact. Each one is meant to be a self-contain
 - **Two gates stand between a visitor and the work:** the counter, then the landing click. Decide whether this is intentional brand theater or friction. Options include tying the counter to real readiness, shortening it, or skipping it for returning visitors.
 - **Measure real LCP / INP / CLS** on Vercel Speed Insights or Lighthouse as the baseline before changing anything.
 
-### E. Fonts 🟠
-**Where:** [index.html](index.html), [index.css](src/index.css), [P5Menu_canvas.jsx](src/components/P5Menu_canvas.jsx) (`new FontFace('InterBold', …)`)
+### E. Fonts ✅ *done 2026-10-11*
+**Where:** [index.css](src/index.css) (`@font-face`), [index.html](index.html) (preloads), [src/assets/fonts/](src/assets/fonts/)
 
-- **The same `Inter_Bold.ttf` is registered several ways:**
-  - `@font-face 'Inter'` and `'Inter Bold'`, declared in both index.html and index.css
-  - `FontFace('InterBold')` in the menu
-  - (P5Logo's `FontFace` and `p.loadFont()` went away in C.)
-- **Google Fonts Inter (variable) is also `@import`ed twice.** One is render-blocking inside an inline `<style>`.
-- **The fonts are TTF, not WOFF2.** Subset WOFF2 would be about 30–60 KB instead of 755 KB.
-- `/font/*` gets a 1-week cache since K, not the 1-year immutable cache `/assets/*` gets. Fonts moved into `src/` would get hashed filenames and the immutable cache.
+**Result:** fonts went from 738 KB of TTFs plus ~76 KB from Google Fonts to **118 KB**, all self-hosted, with no third-party requests and nothing render-blocking. Rendered text widths are identical at every weight and size tested (400–800 at 12–40 px).
+
+**How the faces are set up:**
+- **Before:** the static TTFs rendered weights 400 and 700, and Google's variable Inter (wght + opsz) rendered 500, 600 and 800.
+- **After:** the same split, now self-hosted.
+  - `Inter-Variable-latin.woff2` (73 KB) is Fontsource's copy of Google's Latin build. It renders 500, 600 and 800.
+  - `Inter-Regular.woff2` (27 KB) and `Inter-Bold.woff2` (21 KB) are the same TTFs subset to Latin plus arrows, keeping the default OpenType features and `tnum` (used by the video timer). They render 400 and 700 and are declared after the variable face so they win for those weights.
+- **Delivery:** the fonts live in `src/assets/` so Vite hashes them; they get the immutable `/assets` cache, and the preload links in `index.html` point at the hashed files.
+- **One family:** the `InterBold` and `Inter Bold` aliases are gone. The menu canvas and the landing headline use `Inter` at weight 700, which is the same file as before.
+
+**Notes:**
+- **Missing characters:** anything outside Latin, such as the ⟳ retry icon (not in Inter anyway), falls back to the system font, just as it did with Google's Latin subset.
+- **Regenerating the subsets:** use `subset-font` with the ranges in `index.css` and `keepFeatures: ['kern','liga','calt','ccmp','locl','mark','mkmk','rlig','rvrn','tnum']`. The original TTFs are in git history (`public/font/`, before this change).
 
 ### F. ContentArea & content model 🟡
 **Where:** [ContentArea.jsx](src/components/ContentArea.jsx), [ContentArea.css](src/components/ContentArea.css), [navigation.js](src/data/navigation.js)
@@ -270,7 +277,7 @@ The areas are ordered by expected impact. Each one is meant to be a self-contain
 3. ~~**C (render loops)**~~ ✅
 4. ~~**B (bundle)**~~ ✅
 5. **A (media):** the biggest payoff, but it needs an encoding and asset workflow decision.
-6. **E (fonts)**, then **D (first load)**.
+6. ~~**E (fonts)**~~ ✅, then **D (first load)**.
 7. **F, G, H, I, J:** structural and quality work, in whatever order matches priorities.
 
 ## 8. Open questions for Henry
