@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import P5Menu from './components/P5Menu_canvas';
+import CaseStudyInfo from './components/CaseStudyInfo';
+import SiteSearch from './components/SiteSearch';
 import ContentArea from './components/ContentArea';
 import CustomCursor from './components/CustomCursor';
+import ContextMenu from './components/ContextMenu';
 import LandingOverlay from './components/LandingOverlay';
-import ReturnArrow from './components/ReturnArrow';
-import HomeTextOverlay from './components/HomeTextOverlay';
 import { useNavigationStore } from './store/navigationStore';
 import { colorThemes } from './config/theme';
 import './App.css';
@@ -49,11 +50,12 @@ function App() {
   return (
     <div className="App">
       <P5Menu />
+      <CaseStudyInfo />
+      <SiteSearch />
       <ContentArea />
-      <HomeTextOverlay />
+      <ContextMenu />
       <CustomCursor />
       <LandingOverlay />
-      <ReturnArrow />
     </div>
   );
 }

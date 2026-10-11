@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { loadHls } from '../utils/loadHls';
 import './Lightbox.css';
 
@@ -69,8 +70,6 @@ function LightboxVideo({ src }) {
 }
 
 function Lightbox({ items, activeIndex, onClose, onNavigate }) {
-  const strokeColor = '#ffffff';
-
   const hasPrev = activeIndex > 0;
   const hasNext = activeIndex < items.length - 1;
   const current = items[activeIndex];
@@ -106,26 +105,14 @@ function Lightbox({ items, activeIndex, onClose, onNavigate }) {
 
   const isVideo = current.type === 'video' || /\.(mp4|mov|webm|m3u8)/i.test(current.src);
 
-  return (
+  // Rendered on <body>: inside the content area its z-index would only count
+  // within that panel, leaving the nav box drawn over it
+  return createPortal(
     <div className="lightbox-overlay" onClick={onClose}>
       {/* Close / return arrow — upper left */}
-      <button className="lightbox-back" onClick={onClose} aria-label="Close lightbox">
-        <svg width="16" height="16" viewBox="0 0 30 30">
-          <path
-            d="M 22 22 L 6 6"
-            stroke={strokeColor}
-            strokeWidth="2"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M 6 14 L 6 6 L 14 6"
-            stroke={strokeColor}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
+      <button className="icon-button lightbox-back" onClick={onClose} aria-label="Close lightbox">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M10 10 L2 2 M2 7.5 L2 2 L7.5 2" />
         </svg>
       </button>
 
@@ -136,16 +123,9 @@ function Lightbox({ items, activeIndex, onClose, onNavigate }) {
 
       {/* Prev arrow */}
       {hasPrev && (
-        <button className="lightbox-arrow lightbox-arrow-left" onClick={goPrev} aria-label="Previous">
-          <svg width="20" height="20" viewBox="0 0 30 30">
-            <path
-              d="M 20 6 L 10 15 L 20 24"
-              stroke={strokeColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
+        <button className="icon-button lightbox-arrow lightbox-arrow-left" onClick={goPrev} aria-label="Previous">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M7.5 2 L3.5 6 L7.5 10" />
           </svg>
         </button>
       )}
@@ -165,20 +145,14 @@ function Lightbox({ items, activeIndex, onClose, onNavigate }) {
 
       {/* Next arrow */}
       {hasNext && (
-        <button className="lightbox-arrow lightbox-arrow-right" onClick={goNext} aria-label="Next">
-          <svg width="20" height="20" viewBox="0 0 30 30">
-            <path
-              d="M 10 6 L 20 15 L 10 24"
-              stroke={strokeColor}
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
+        <button className="icon-button lightbox-arrow lightbox-arrow-right" onClick={goNext} aria-label="Next">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M4.5 2 L8.5 6 L4.5 10" />
           </svg>
         </button>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 

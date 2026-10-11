@@ -938,7 +938,7 @@ function LandingOverlay() {
     });
   }, [setLandingDismissed, centerPos]);
 
-  // Listen for return signal from ReturnArrow
+  // Replay the landing overlay when navigation state is set to 'returning'
   useEffect(() => {
     if (isDismissed === 'returning') {
       handleReturn();

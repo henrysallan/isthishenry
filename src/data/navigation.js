@@ -6,6 +6,7 @@ export const navigationData = {
     title: 'Home',
     content: {
       name: 'Henry Allan',
+      email: 'isthishenry@gmail.com',
       subtitle: 'motion, brand, generative design\n3d, vibe coding',
       current: 'current:\nthe collected works',
       past: 'past:\nvmgroupe\nkalshi\nmschf'
@@ -525,39 +526,79 @@ Although I am not an engineer and have very limited experience writing code, I h
     {
       id: 'projects',
       title: 'Projects',
-      type: 'page',
+      type: 'submenu',
       content: {
         title: 'Projects',
-        isProjectsPage: true,
-        projects: [
-          {
+        isGrid: true
+      },
+      submenu: [
+        {
+          id: 'poetry-map',
+          title: 'Poetry Map',
+          type: 'page',
+          content: {
             title: 'Poetry Map',
             link: 'https://poetrymap.app',
             description: 'This is a poem visualizer using Open AI\'s embedding model and Threejs. A dataset of 1000+ poems are chunked and passed to Open AI embedding API. The resulting vector is reduced to 3 dimensions and mapped in space with a dot. The blue line connects them in order.',
-            video: 'https://stream.mux.com/s11J3wAHUMyeC25fXvfK4rEcFNgru7LgRZNSKcwuzBI.m3u8'
-          },
-          {
+            thumbnail: 'https://stream.mux.com/s11J3wAHUMyeC25fXvfK4rEcFNgru7LgRZNSKcwuzBI.m3u8',
+            blocks: [
+              { type: 'video', src: 'https://stream.mux.com/s11J3wAHUMyeC25fXvfK4rEcFNgru7LgRZNSKcwuzBI.m3u8', colSpan: 12, colStart: 1 }
+            ]
+          }
+        },
+        {
+          id: 'codex-image',
+          title: 'Codex-Image',
+          type: 'page',
+          content: {
             title: 'Codex-Image',
             description: 'A dynamic AI driven image vault.',
-            image: 'https://cdn.isthishenry.com/img/154_Projects_Codex-image.270e2595-2560.jpg'
-          },
-          {
+            thumbnail: 'https://cdn.isthishenry.com/img/154_Projects_Codex-image.270e2595-2560.jpg',
+            blocks: [
+              { type: 'image', src: 'https://cdn.isthishenry.com/img/154_Projects_Codex-image.270e2595-2560.jpg', colSpan: 12, colStart: 1 }
+            ]
+          }
+        },
+        {
+          id: 'codex-book',
+          title: 'Codex-Book',
+          type: 'page',
+          content: {
             title: 'Codex-Book',
             description: 'External brain productivity app with advanced RAG and custom tool integration.',
-            image: 'https://cdn.isthishenry.com/img/155_Projects_Codex-book.157e39c1-2560.jpg'
-          },
-          {
+            thumbnail: 'https://cdn.isthishenry.com/img/155_Projects_Codex-book.157e39c1-2560.jpg',
+            blocks: [
+              { type: 'image', src: 'https://cdn.isthishenry.com/img/155_Projects_Codex-book.157e39c1-2560.jpg', colSpan: 12, colStart: 1 }
+            ]
+          }
+        },
+        {
+          id: 'playspace',
+          title: 'Playspace.life',
+          type: 'page',
+          content: {
             title: 'Playspace.life',
             description: 'Freeform social moodboard platform.',
-            image: 'https://cdn.isthishenry.com/img/156_Projects_Playspace.d5008010-2560.jpg'
-          },
-          {
+            thumbnail: 'https://cdn.isthishenry.com/img/156_Projects_Playspace.d5008010-2560.jpg',
+            blocks: [
+              { type: 'image', src: 'https://cdn.isthishenry.com/img/156_Projects_Playspace.d5008010-2560.jpg', colSpan: 12, colStart: 1 }
+            ]
+          }
+        },
+        {
+          id: 'catland',
+          title: 'CatLand',
+          type: 'page',
+          content: {
             title: 'CatLand',
             description: 'A threejs videogame built with Blender and vibecoded with Claude',
-            video: 'https://stream.mux.com/It01dpo1HFuVinRvuzMuf8FTehiSCCEJOLYib9jhOygU.m3u8'
+            thumbnail: 'https://stream.mux.com/It01dpo1HFuVinRvuzMuf8FTehiSCCEJOLYib9jhOygU.m3u8',
+            blocks: [
+              { type: 'video', src: 'https://stream.mux.com/It01dpo1HFuVinRvuzMuf8FTehiSCCEJOLYib9jhOygU.m3u8', colSpan: 12, colStart: 1 }
+            ]
           }
-        ]
-      }
+        }
+      ]
     }
   ]
 };

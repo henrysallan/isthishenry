@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
 import { R2Video } from '../utils/videoStreaming';
@@ -10,6 +10,9 @@ import CyclingText from './CyclingText';
 import Lightbox from './Lightbox';
 import StreamVideo from './StreamVideo';
 import { columnSizes, responsiveImage } from '../utils/responsiveImage';
+import { fuzzySearch } from '../utils/fuzzySearch';
+import SearchField from './SearchField';
+import { isCaseStudy, linkLabel } from '../utils/caseStudy';
 import './ContentArea.css';
 
 // Collect all media URLs from the Sketches section for the about page showcase
@@ -385,18 +388,43 @@ function VimeoEmbed({ src, aspectRatio = '56.25%' }) {
 }
 
 // ── Work list with native scrolling ──
+// Search also reaches into nested lists (e.g. the projects inside More); those
+// results carry the nested list's id so they open with it as their parent view.
 function WorkList({ items, onItemClick }) {
+  const [query, setQuery] = useState('');
+  const searchable = useMemo(() => items.flatMap(item => (
+    item.type === 'submenu' && item.submenu
+      ? item.submenu.map(child => ({ ...child, parentView: item.id }))
+      : [item]
+  )), [items]);
+  const isSearching = query.trim() !== '';
+  const rows = isSearching ? fuzzySearch(searchable, query) : items;
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && isSearching && rows[0]) onItemClick(rows[0].id, rows[0].parentView);
+    if (e.key === 'Escape') setQuery('');
+  };
+
   return (
     <div className="work-list-container">
       <div className="work-list">
-        {items.map((item) => {
+        <SearchField
+          className="work-search"
+          label="Search work"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onClear={() => setQuery('')}
+        />
+        {isSearching && rows.length === 0 && <p className="work-empty">No matches</p>}
+        {rows.map((item) => {
           const thumbnailSrc = item.content?.thumbnail;
           const isVideo = thumbnailSrc && /\.(mp4|mov|webm|m3u8)$/i.test(thumbnailSrc);
           return (
             <div
               key={item.id}
               className="work-row"
-              onClick={() => onItemClick(item.id)}
+              onClick={() => onItemClick(item.id, item.parentView)}
             >
               <div className="work-row-text">
                 <span className="work-row-title">{item.title}</span>
@@ -407,7 +435,7 @@ function WorkList({ items, onItemClick }) {
                   isVideo ? (
                     <StreamVideo src={thumbnailSrc} muted loop playsInline autoPlay />
                   ) : (
-                    <img src={thumbnailSrc} srcSet={responsiveImage(thumbnailSrc)?.srcSet} sizes="72px" alt={item.title} />
+                    <img src={thumbnailSrc} srcSet={responsiveImage(thumbnailSrc)?.srcSet} sizes="88px" alt={item.title} />
                   )
                 )}
               </div>
@@ -498,7 +526,7 @@ function ContentArea() {
     if (view === 'home') {
       return (
         <div className="home-content">
-          <div className="video-container full-bleed">
+          <div className="video-container home-video">
             <VideoPlayer 
               src="https://stream.mux.com/9iCvQyU2AW3HaJprVMaLiGdUdyTnVEa400q74fDZIcjM.m3u8"
               autoplay={true}
@@ -508,50 +536,6 @@ function ContentArea() {
       );
     }
     
-    // Projects page – 2-per-row card grid
-    if (contentData.isProjectsPage && contentData.projects) {
-      const projectMedia = contentData.projects
-        .filter(p => p.image || p.video)
-        .map((p) => {
-          if (p.video) return { src: p.video, type: 'video', alt: p.title };
-          return { src: p.image, type: 'image', alt: p.title };
-        });
-
-      const openProjectLightbox = (index) => {
-        setLightboxItems(projectMedia);
-        setLightboxIndex(index);
-      };
-
-      return (
-        <div className="projects-page">
-          <div className="page-header">
-            <h1>{contentData.title}</h1>
-          </div>
-          <div className="projects-grid">
-            {contentData.projects.map((project, index) => (
-              <div key={index} className="project-card">
-                <div className="project-card-text">
-                  {project.link ? (
-                    <a href={project.link} target="_blank" rel="noopener noreferrer" className="project-card-title project-card-link">{project.title}</a>
-                  ) : (
-                    <span className="project-card-title">{project.title}</span>
-                  )}
-                  <span className="project-card-desc">{project.description}</span>
-                </div>
-                <div className="project-card-image clickable" onClick={() => openProjectLightbox(index)}>
-                  {project.video ? (
-                    <LazyVideo src={project.video} />
-                  ) : (
-                    <ProgressiveImage src={project.image} alt={project.title} sizes={columnSizes(0.5)} />
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
     // Row-based work list for submenu landing pages
     if (contentData.isGrid && parentSubmenu?.items) {
       const listItems = parentSubmenu.items;
@@ -560,14 +544,15 @@ function ContentArea() {
       const nestedParentView = view !== parentSubmenu.parentId ? view : null;
       return (
         <WorkList 
+          key={view}
           items={listItems} 
-          onItemClick={(itemId) => {
+          onItemClick={(itemId, parentView) => {
             const clickedItem = listItems.find(item => item.id === itemId);
             if (clickedItem?.type === 'submenu') {
               // Open nested submenu (e.g. "More" inside Work)
               navigateToNestedSubmenu(itemId);
             } else {
-              handleGridItemClick(itemId, parentSubmenu.parentId, nestedParentView);
+              handleGridItemClick(itemId, parentSubmenu.parentId, parentView || nestedParentView);
             }
           }} 
         />
@@ -665,7 +650,7 @@ function ContentArea() {
                        !contentData.contactLinks && !contentData.blocks;
     
     // Regular page view
-    const hasCaseStudyHeader = contentData.year || contentData.tags;
+    const hasCaseStudyHeader = isCaseStudy(contentData);
     return (
       <div className={`page-content ${isTextOnly ? 'text-only' : ''}`}>
         {hasCaseStudyHeader ? (
@@ -674,6 +659,11 @@ function ContentArea() {
               <div className="case-study-left">
                 <h1 className="case-study-title">{contentData.title}</h1>
                 {contentData.description && <p className="case-study-description">{contentData.description}</p>}
+                {contentData.link && (
+                  <a className="case-study-link" href={contentData.link} target="_blank" rel="noopener noreferrer">
+                    {linkLabel(contentData.link)} ↗
+                  </a>
+                )}
               </div>
               <div className="case-study-right">
                 {contentData.year && <span className="case-study-year">{contentData.year}</span>}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { resolveUrlToState, pushUrl, replaceUrl } from '../utils/urlSync';
+import { resolveUrlToState, stateToUrl, pushUrl, replaceUrl } from '../utils/urlSync';
 
 // Always use light mode (classic theme)
 
@@ -103,6 +103,25 @@ export const useNavigationStore = create((set, get) => ({
       parentView: null
     };
   }),
+
+  // Jump straight to any page by id, with the same menu state a deep link to it
+  // would have (used by site search)
+  navigateTo: (id) => {
+    const navState = resolveUrlToState(stateToUrl(id));
+    if (navState) set(navState);
+    else get().navigateToHome();
+  },
+
+  // Fold the open submenu back into the main menu, keeping its landing page
+  // (e.g. the Work list) on screen
+  closeSubmenu: () => set((state) => (state.expandedSubmenuId ? {
+    currentView: state.expandedSubmenuId,
+    activeMenuItem: state.expandedSubmenuId,
+    currentMenu: 'main',
+    expandedSubmenuId: null,
+    expandedNestedSubmenuId: null,
+    parentView: null
+  } : state)),
 
   // Navigate into a nested submenu (e.g. "More" inside Work)
   navigateToNestedSubmenu: (nestedId) => set((state) => {

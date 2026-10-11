@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
 import { navigationData } from '../data/navigation';
 import { useNavigationStore } from '../store/navigationStore';
 import { colorThemes, theme } from '../config/theme';
@@ -34,6 +34,126 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+const isMobile = () => window.innerWidth <= 768;
+
+// ── Nav box layout ──
+// The menu is drawn inside a rounded box. On home the box is open and centred
+// in the left column; elsewhere it collapses to the top-left corner and opens
+// on hover (or tap). The open box is as tall as the deepest open menu column
+// needs, and that column is centred horizontally. The menu canvas is sized to
+// the largest the open box can get.
+const BOX_MARGIN = 10;
+// The name sits this far in from the box's left edge
+const BOX_INSET = 10;
+// Collapsed box padding around the header text: top/bottom and right
+const BOX_PAD_Y = 8;
+// Gap between the collapsed box and the back button under it
+const OUTSIDE_BACK_GAP = 8;
+const BOX_PAD_RIGHT = 160;
+// Centre of the first menu item, below the name
+const MENU_FIRST_Y = 52;
+// From the last item's centre to the bottom of the box
+const MENU_BOTTOM_PAD = 24;
+// Extra space above and below the menu, given up when the column is too short
+const MENU_BREATHING = 16;
+// How far past the box's right edge the active item's wire ends, so it leaves the box
+const PAGE_WIRE_OVERSHOOT = 20;
+// Keyboard highlight behind the selected menu item
+const KEYBOARD_HIGHLIGHT = '#dcdcdc';
+const KEYBOARD_PAD_X = 6;
+const KEYBOARD_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape']);
+// Ignore hover while the box flies from the centre to the top after leaving
+// home, so a pointer that was over the big box doesn't reopen it mid-flight
+const HOVER_SUPPRESS_MS = 700;
+const HOVER_CLOSE_DELAY_MS = 150;
+
+function getColumnSize() {
+  if (isMobile()) return { w: window.innerWidth, h: Math.floor(window.innerHeight * 0.35) };
+  return { w: Math.floor(window.innerWidth * theme.layout.leftColumnRatio), h: window.innerHeight };
+}
+
+function getOpenBoxSize() {
+  const col = getColumnSize();
+  // On desktop the box runs to the column edge, so the content panel's own
+  // 10px inset makes the gap beside it match its margin from the screen edge
+  const w = isMobile() ? col.w - BOX_MARGIN * 2 : col.w - BOX_MARGIN;
+  return { w, h: col.h - BOX_MARGIN * 2 };
+}
+
+// Items in one menu column: 'main', the open 'submenu', or the open 'nested' one
+function getColumnItems(state, level) {
+  const mainMenu = navigationData.mainMenu.filter(m => !m.hidden);
+  if (level === 'main') return mainMenu;
+  const submenu = mainMenu.find(m => m.id === state.expandedSubmenuId)?.submenu || [];
+  if (level === 'submenu') return submenu;
+  return submenu.find(s => s.id === state.expandedNestedSubmenuId)?.submenu || [];
+}
+
+// Opening a main menu item, by click or keyboard
+function openMainItem(menuItem) {
+  const state = useNavigationStore.getState();
+  if (menuItem.type === 'submenu') {
+    state.navigateToSubmenu(menuItem.id);
+  } else if (menuItem.type === 'page') {
+    if (state.expandedSubmenuId) {
+      state.navigateToSubmenu(null);
+      setTimeout(() => {
+        useNavigationStore.getState().navigateToPage(menuItem.id, menuItem.id);
+      }, theme.animation.duration * 1000);
+    } else {
+      state.navigateToPage(menuItem.id, menuItem.id);
+    }
+  }
+}
+
+// The deepest open menu column and the vertical layout built around it. Every
+// column is centred on the same line so the wires between them stay level.
+function getMenuMetrics(state) {
+  const mainMenu = getColumnItems(state, 'main');
+  const submenu = getColumnItems(state, 'submenu');
+  const nested = getColumnItems(state, 'nested');
+  let level = 'main';
+  let items = mainMenu;
+  if (nested.length > 0) {
+    level = 'nested';
+    items = nested;
+  } else if (state.expandedSubmenuId) {
+    level = 'submenu';
+    items = submenu;
+  }
+  const spacing = isMobile() ? 20 : 25;
+  const span = (items.length - 1) * spacing;
+  const compactHeight = MENU_FIRST_Y + span + MENU_BOTTOM_PAD;
+  const maxHeight = getOpenBoxSize().h;
+  const breathing = Math.max(0, Math.min(MENU_BREATHING, (maxHeight - compactHeight) / 2));
+  return {
+    level,
+    items,
+    spacing,
+    centerY: MENU_FIRST_Y + breathing + span / 2,
+    height: Math.min(compactHeight + breathing * 2, maxHeight),
+  };
+}
+
+function BackArrowIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+      <path d="M10 10 L2 2 M2 7.5 L2 2 L7.5 2" />
+    </svg>
+  );
+}
+
+function findTitle(items, id) {
+  for (const item of items) {
+    if (item.id === id) return item.title;
+    if (item.submenu) {
+      const title = findTitle(item.submenu, id);
+      if (title) return title;
+    }
+  }
+  return null;
+}
+
 // ── Color helpers ──
 function withAlpha(hexOrColor, alpha) {
   // Accepts "#rrggbb" or "rgb(…)" or a plain color name
@@ -51,11 +171,21 @@ function withAlpha(hexOrColor, alpha) {
 }
 
 function P5Menu() {
+  // Left column: dot grid canvas
   const containerRef = useRef(null);
+  const dotsCanvasRef = useRef(null);
+  const dotsCtxRef = useRef(null);
+  const dotMouseRef = useRef({ x: -9999, y: -9999 });
+  // Nav box: menu canvas
+  const boxRef = useRef(null);
+  const menuHostRef = useRef(null);
+  const headerRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
+  const mouseRef = useRef({ x: -9999, y: -9999 });
   const rafRef = useRef(null);
-  const mouseRef = useRef({ x: 0, y: 0 });
+  // Arrow-key selection: which column and row is highlighted
+  const keyboardRef = useRef({ active: false, level: 'main', index: 0 });
   const startTimeRef = useRef(performance.now());
   const lastActivityRef = useRef(performance.now());
   const framesSinceActivityRef = useRef(0);
@@ -67,7 +197,6 @@ function P5Menu() {
     subAnimStartTime: 0,
     subAnimDirection: 0,
     prevExpandedSubmenuIdForAnim: null,
-    backButton: { scale: 0, targetScale: 0, x: 0, y: 0, targetX: 0, targetY: 0 },
     submenuWireStartTime: 0,
     submenuWireDirection: 0,
     submenuWireVisible: false,
@@ -87,40 +216,27 @@ function P5Menu() {
     pageWireVisible: false,
     pageWireEndpoints: null,
     cameraX: 0,
+    cameraPlaced: false,
+    keyboardRect: null,
+    keyboardOpacity: 0,
     targetCameraX: 0,
     dotPositions: [],
     dotBasePositions: [],
     prevExpandedSubmenuId: null,
-    prevActiveMenuItem: null,
+    prevPageWireTarget: null,
     prevCurrentView: null,
     pageWireItem: null,
     fontReady: false,
   });
 
-  const isMobile = () => window.innerWidth <= 768;
-
-  // ── Layout ──
-  const getCanvasWidth = useCallback(() => {
-    if (isMobile()) return window.innerWidth;
-    return Math.floor(window.innerWidth * theme.layout.leftColumnRatio);
-  }, []);
-
-  const getCanvasHeight = useCallback(() => {
-    if (isMobile()) return Math.floor(window.innerHeight * 0.35);
-    return window.innerHeight;
-  }, []);
-
-  const getMenuX = useCallback(() => {
-    const w = getCanvasWidth();
-    if (isMobile()) return w / 2 - 30;
-    return w / 2 - 40;
-  }, [getCanvasWidth]);
+  // ── Layout (menu coordinates are relative to the open nav box) ──
+  // Columns sit at fixed offsets from each other; the camera centres the
+  // deepest open one in the box
+  const getMenuX = useCallback(() => 0, []);
 
   const getMenuPositionPx = useCallback((menuLevel, itemIndex, itemCount) => {
-    const spacing = isMobile() ? 20 : 25;
+    const { spacing, centerY } = getMenuMetrics(useNavigationStore.getState());
     const totalHeight = (itemCount - 1) * spacing;
-    const h = getCanvasHeight();
-    const centerY = h / 2;
     const startY = centerY - totalHeight / 2;
     const depthSep = isMobile()
       ? theme.spatial.menuDepthSeparation * 25
@@ -133,7 +249,7 @@ function P5Menu() {
       default: x = getMenuX();
     }
     return { x, y: startY + itemIndex * spacing };
-  }, [getCanvasHeight, getMenuX]);
+  }, [getMenuX]);
 
   // ── Dots ──
   const initDots = useCallback(() => {
@@ -160,30 +276,36 @@ function P5Menu() {
   // ── Setup ──
   const setup = useCallback(() => {
     const container = containerRef.current;
-    if (!container) return;
-
-    // Create canvas
-    const canvas = document.createElement('canvas');
-    canvas.style.display = 'block';
-    container.appendChild(canvas);
-    canvasRef.current = canvas;
-
-    const ctx = canvas.getContext('2d');
-    ctxRef.current = ctx;
+    const menuHost = menuHostRef.current;
+    if (!container || !menuHost) return;
 
     // High-DPI sizing helper
-    const sizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const w = getCanvasWidth();
-      const h = getCanvasHeight();
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const createCanvas = (parent, getSize) => {
+      const canvas = document.createElement('canvas');
+      canvas.style.display = 'block';
+      parent.appendChild(canvas);
+      const ctx = canvas.getContext('2d');
+      canvas._sizeCanvas = () => {
+        const dpr = window.devicePixelRatio || 1;
+        const { w, h } = getSize();
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      };
+      canvas._sizeCanvas();
+      return { canvas, ctx };
     };
-    canvas._sizeCanvas = sizeCanvas;
-    sizeCanvas();
+
+    // Dot grid fills the left column; the menu canvas is sized to the open box
+    const dots = createCanvas(container, getColumnSize);
+    dotsCanvasRef.current = dots.canvas;
+    dotsCtxRef.current = dots.ctx;
+
+    const { canvas } = createCanvas(menuHost, getOpenBoxSize);
+    canvasRef.current = canvas;
+    ctxRef.current = canvas.getContext('2d');
 
     // Load Inter Bold through the @font-face rules in index.css
     const anim = animRef.current;
@@ -266,8 +388,8 @@ function P5Menu() {
     canvas.addEventListener('touchend', onTouchEnd);
     canvas._onTouchEnd = onTouchEnd;
 
-    // Same when the mouse leaves, so hover state and the dot field don't stay
-    // stuck at the point where the pointer exited
+    // Same when the mouse leaves, so hover state doesn't stay stuck at the
+    // point where the pointer exited
     const onMouseLeave = () => {
       mouseRef.current.x = -9999;
       mouseRef.current.y = -9999;
@@ -275,9 +397,27 @@ function P5Menu() {
     canvas.addEventListener('mouseleave', onMouseLeave);
     canvas._onMouseLeave = onMouseLeave;
 
+    // The dot field pushes away from the pointer; it sits under the nav box,
+    // so it only sees the pointer while it's over the bare column
+    const dotsCanvas = dots.canvas;
+    const onDotsMouseMove = (e) => {
+      const rect = dotsCanvas.getBoundingClientRect();
+      dotMouseRef.current.x = e.clientX - rect.left;
+      dotMouseRef.current.y = e.clientY - rect.top;
+    };
+    const onDotsMouseLeave = () => {
+      dotMouseRef.current.x = -9999;
+      dotMouseRef.current.y = -9999;
+    };
+    dotsCanvas.addEventListener('mousemove', onDotsMouseMove);
+    dotsCanvas.addEventListener('mouseleave', onDotsMouseLeave);
+    dotsCanvas._onMouseMove = onDotsMouseMove;
+    dotsCanvas._onMouseLeave = onDotsMouseLeave;
+
     // Resize
     const onResize = () => {
       canvas._sizeCanvas();
+      dotsCanvas._sizeCanvas();
       initDots();
       const mm = navigationData.mainMenu.filter(m => !m.hidden);
       for (let i = 0; i < mm.length; i++) {
@@ -291,7 +431,7 @@ function P5Menu() {
     window.addEventListener('resize', onResize);
     canvas._onResize = onResize;
 
-  }, [getCanvasWidth, getCanvasHeight, getMenuPositionPx, getMenuX, initDots]);
+  }, [getMenuPositionPx, initDots]);
 
   // ── Click handler ──
   const handleClick = useCallback((rawX, rawY) => {
@@ -316,15 +456,6 @@ function P5Menu() {
       : null;
     const nestedData = nestedParent?.submenu || [];
 
-    // Back button
-    if (anim.backButton.scale > 0.3) {
-      const backSize = isMobile() ? 48 : 36;
-      if (isPointInRect(mx, my, anim.backButton.x - backSize / 2, anim.backButton.y, backSize, backSize)) {
-        state.goBack();
-        return;
-      }
-    }
-
     // Check nested items first (deepest level has priority)
     for (let i = 0; i < nestedData.length; i++) {
       if (i >= anim.nestedItems.length) break;
@@ -344,19 +475,7 @@ function P5Menu() {
       const item = anim.mainItems[i];
       const tw = textWidth(ctx, mainMenu[i].title);
       if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
-        const menuItem = mainMenu[i];
-        if (menuItem.type === 'submenu') {
-          state.navigateToSubmenu(menuItem.id);
-        } else if (menuItem.type === 'page') {
-          if (state.expandedSubmenuId) {
-            state.navigateToSubmenu(null);
-            setTimeout(() => {
-              useNavigationStore.getState().navigateToPage(menuItem.id, menuItem.id);
-            }, theme.animation.duration * 1000);
-          } else {
-            state.navigateToPage(menuItem.id, menuItem.id);
-          }
-        }
+        openMainItem(mainMenu[i]);
         return;
       }
     }
@@ -398,7 +517,7 @@ function P5Menu() {
 
   const updateDots = useCallback(() => {
     const anim = animRef.current;
-    const mouse = mouseRef.current;
+    const mouse = dotMouseRef.current;
     const hoverRadius = isMobile() ? 60 : 100;
     const hoverStrength = isMobile() ? 15 : 25;
     const lerpFactor = 0.08;
@@ -449,38 +568,14 @@ function P5Menu() {
     ctx.stroke();
   }, []);
 
-  const drawBackButton = useCallback((ctx, x, y, scale, col, hovered) => {
-    if (scale < 0.01) return;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(scale, scale);
-    const opacity = hovered ? 1 : 0.59;
-    ctx.strokeStyle = withAlpha(col, opacity);
-    ctx.lineWidth = 1.5;
-    const size = 7;
-    // Diagonal line
-    ctx.beginPath();
-    ctx.moveTo(size, size);
-    ctx.lineTo(-size, -size);
-    ctx.stroke();
-    // Arrowhead arms
-    ctx.beginPath();
-    ctx.moveTo(-size, size * 0.6);
-    ctx.lineTo(-size, -size);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(size * 0.6, -size);
-    ctx.lineTo(-size, -size);
-    ctx.stroke();
-    ctx.restore();
-  }, []);
-
   // ── Main draw loop ──
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
+    const dotsCanvas = dotsCanvasRef.current;
+    const dctx = dotsCtxRef.current;
     const anim = animRef.current;
-    if (!canvas || !ctx || !anim.fontReady) {
+    if (!canvas || !ctx || !dotsCanvas || !dctx || !anim.fontReady) {
       lastActivityRef.current = performance.now(); // don't go idle before the first real frame
       framesSinceActivityRef.current = 0;
       rafRef.current = requestAnimationFrame(draw);
@@ -489,32 +584,34 @@ function P5Menu() {
 
     const mouse = mouseRef.current;
     const millis = performance.now() - startTimeRef.current;
-    const W = getCanvasWidth();
-    const H = getCanvasHeight();
+    const col = getColumnSize();
 
-    // Reset transform for clear, then re-apply DPR scale
+    // Reset transform for clear, then re-apply DPR scale. The menu canvas stays
+    // transparent so the nav box's background shows through.
     const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const c of [ctx, dctx]) {
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
 
     // ── Read store ──
     const state = useNavigationStore.getState();
     const { currentView, activeMenuItem, expandedSubmenuId, expandedNestedSubmenuId, currentTheme, isThemeInverted } = state;
+    const kb = keyboardRef.current;
+    const isKeyboardItem = (level, i) => kb.active && kb.level === level && kb.index === i;
     const activeColors = colorThemes[currentTheme];
 
     const bgColor = isThemeInverted ? activeColors.text : activeColors.background;
     const textColor = isThemeInverted ? activeColors.background : activeColors.text;
     const wireColor = isThemeInverted ? activeColors.background : activeColors.wire;
 
-    // ── Clear ──
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, W, H);
-
-    // ── Dots ──
+    // ── Column background + dots ──
+    dctx.fillStyle = bgColor;
+    dctx.fillRect(0, 0, col.w, col.h);
     if (!isMobile()) {
       updateDots();
-      drawDots(ctx, textColor);
+      drawDots(dctx, textColor);
     }
 
     // ── Font setup ──
@@ -533,42 +630,18 @@ function P5Menu() {
       : null;
     const nestedData = nestedParent?.submenu || [];
 
-    // ── Camera offset ──
-    if (expandedNestedSubmenuId && nestedData.length > 0) {
-      // When nested is open, pan so both submenu and nested columns are visible
-      const depthSep = isMobile()
-        ? theme.spatial.menuDepthSeparation * 25
-        : theme.spatial.menuDepthSeparation * 50;
-      const nestedOffset = isMobile() ? 255 : 360;
-      const submenuX = getMenuX() + depthSep;
-      const nestedX = submenuX + nestedOffset;
-      let maxNestedTextW = 0;
-      for (let i = 0; i < nestedData.length; i++) {
-        maxNestedTextW = Math.max(maxNestedTextW, textWidth(ctx, nestedData[i].title));
-      }
-      const rightEdge = nestedX + maxNestedTextW + 10;
-      const leftEdge = submenuX - 20;
-      const combinedCenter = (leftEdge + rightEdge) / 2;
-      const canvasCenter = W / 2;
-      anim.targetCameraX = canvasCenter - combinedCenter;
-    } else if (expandedSubmenuId) {
-      const depthSep = isMobile()
-        ? theme.spatial.menuDepthSeparation * 25
-        : theme.spatial.menuDepthSeparation * 50;
-      const submenuX = getMenuX() + depthSep;
-      let avgTextW = 0;
-      const ep = mainMenu.find(m => m.id === expandedSubmenuId);
-      if (ep && ep.submenu) {
-        for (let i = 0; i < ep.submenu.length; i++) {
-          avgTextW += textWidth(ctx, ep.submenu[i].title);
-        }
-        avgTextW /= ep.submenu.length;
-      }
-      const submenuCenter = submenuX + avgTextW / 2;
-      const canvasCenter = W / 2;
-      anim.targetCameraX = canvasCenter - submenuCenter;
-    } else {
-      anim.targetCameraX = 0;
+    // ── Camera offset: centre the deepest open column in the box ──
+    const metrics = getMenuMetrics(state);
+    let widest = 0;
+    for (let i = 0; i < metrics.items.length; i++) {
+      widest = Math.max(widest, textWidth(ctx, metrics.items[i].title));
+    }
+    const columnX = (getOpenBoxSize().w - widest) / 2;
+    anim.targetCameraX = columnX - getMenuPositionPx(metrics.level, 0, 1).x;
+    // Start in place rather than sliding in on the first frame
+    if (!anim.cameraPlaced) {
+      anim.cameraX = anim.targetCameraX;
+      anim.cameraPlaced = true;
     }
     anim.cameraX += (anim.targetCameraX - anim.cameraX) * 0.06;
 
@@ -588,7 +661,7 @@ function P5Menu() {
         anim.mainItems[i].x - 5, anim.mainItems[i].y,
         tw + 10, hitHeight
       );
-      anim.mainItems[i].targetOpacity = isActive ? 1 : isHov ? 1 : 0.5;
+      anim.mainItems[i].targetOpacity = isActive || isHov || isKeyboardItem('main', i) ? 1 : 0.5;
     }
 
     // ── Lerp main menu ──
@@ -637,7 +710,7 @@ function P5Menu() {
           anim.subItems[i].x - 5, anim.subItems[i].y,
           tw + 10, hitHeight
         );
-        anim.subItems[i].targetOpacity = isActive ? 1 : isHov ? 1 : 0.5;
+        anim.subItems[i].targetOpacity = isActive || isHov || isKeyboardItem('submenu', i) ? 1 : 0.5;
       } else {
         anim.subItems[i].targetOpacity = 0;
       }
@@ -766,7 +839,7 @@ function P5Menu() {
           anim.nestedItems[i].x - 5, anim.nestedItems[i].y,
           tw + 10, hitHeight
         );
-        anim.nestedItems[i].targetOpacity = isActive ? 1 : isHov ? 1 : 0.5;
+        anim.nestedItems[i].targetOpacity = isActive || isHov || isKeyboardItem('nested', i) ? 1 : 0.5;
       } else {
         anim.nestedItems[i].targetOpacity = 0;
       }
@@ -862,13 +935,16 @@ function P5Menu() {
     }
     anim.prevExpandedNestedId = expandedNestedSubmenuId;
 
-    // ── Wire: Active item → Content area edge ──
+    // ── Wire: Current page's item → off the box's right edge, toward the content ──
+    // Only from an item in the centred column; a parent off to the left (e.g.
+    // Work while its list is open) would send the wire across the list
     const pageWireDuration = 500;
-    const leftColW = W; // canvas is the left column
-    const shouldShowPageWire = currentView && currentView !== 'home' && activeMenuItem;
+    const pageWireEndX = getOpenBoxSize().w + PAGE_WIRE_OVERSHOOT;
+    const pageWireTarget = metrics.items.some(item => item.id === currentView) ? currentView : null;
+    const shouldShowPageWire = currentView !== 'home' && pageWireTarget;
 
-    if (shouldShowPageWire && anim.prevActiveMenuItem !== activeMenuItem) {
-      anim.pageWireItem = activeMenuItem;
+    if (shouldShowPageWire && anim.prevPageWireTarget !== pageWireTarget) {
+      anim.pageWireItem = pageWireTarget;
       anim.pageWireStartTime = millis;
       anim.pageWireDirection = 1;
       anim.pageWireEndpoints = null;
@@ -903,8 +979,7 @@ function P5Menu() {
           }
         }
         if (itw > 0) {
-          const cle = leftColW - anim.cameraX;
-          anim.pageWireEndpoints = { x1: ix + itw + 8, y1: iy, x2: cle, y2: iy - 40 };
+          anim.pageWireEndpoints = { x1: ix + itw + 8, y1: iy, x2: pageWireEndX - anim.cameraX, y2: iy - 40 };
         }
       }
       anim.pageWireStartTime = millis;
@@ -921,11 +996,11 @@ function P5Menu() {
       if (raw >= 1) {
         anim.pageWireDirection = 0;
         anim.pageWireEndpoints = null;
-        if (!shouldShowPageWire) anim.pageWireItem = activeMenuItem;
+        if (!shouldShowPageWire) anim.pageWireItem = pageWireTarget;
       }
     } else {
       pageWireT = shouldShowPageWire ? 1 : 0;
-      if (!shouldShowPageWire) anim.pageWireItem = activeMenuItem;
+      if (!shouldShowPageWire) anim.pageWireItem = pageWireTarget;
     }
 
     if (pageWireT > 0.01 && !isMobile()) {
@@ -954,7 +1029,7 @@ function P5Menu() {
           }
         }
         if (pwX1 !== undefined) {
-          pwX2 = leftColW - anim.cameraX;
+          pwX2 = pageWireEndX - anim.cameraX;
           pwY2 = pwY1 - 40;
         }
       }
@@ -963,9 +1038,44 @@ function P5Menu() {
       }
     }
 
-    anim.prevActiveMenuItem = activeMenuItem;
+    anim.prevPageWireTarget = pageWireTarget;
     anim.prevExpandedSubmenuId = expandedSubmenuId;
     anim.prevCurrentView = currentView;
+
+    // ── Keyboard highlight: a rect that glides between items ──
+    let keyboardTarget = null;
+    if (kb.active) {
+      const columns = {
+        main: [anim.mainItems, mainMenu],
+        submenu: [anim.subItems, submenuData],
+        nested: [anim.nestedItems, nestedData],
+      };
+      const [positions, data] = columns[kb.level];
+      const item = positions[kb.index];
+      if (item && data[kb.index]) {
+        const height = metrics.spacing - 1;
+        keyboardTarget = {
+          x: item.x - KEYBOARD_PAD_X,
+          y: item.y - height / 2,
+          w: textWidth(ctx, data[kb.index].title) + KEYBOARD_PAD_X * 2,
+          h: height,
+        };
+      }
+    }
+    if (keyboardTarget) {
+      if (!anim.keyboardRect || anim.keyboardOpacity < 0.01) anim.keyboardRect = { ...keyboardTarget };
+      for (const key of ['x', 'y', 'w', 'h']) {
+        anim.keyboardRect[key] += (keyboardTarget[key] - anim.keyboardRect[key]) * 0.3;
+      }
+    }
+    anim.keyboardOpacity += ((keyboardTarget ? 1 : 0) - anim.keyboardOpacity) * 0.25;
+    if (anim.keyboardRect && anim.keyboardOpacity > 0.01) {
+      const r = anim.keyboardRect;
+      ctx.fillStyle = withAlpha(KEYBOARD_HIGHLIGHT, anim.keyboardOpacity);
+      ctx.beginPath();
+      ctx.roundRect(r.x, r.y, r.w, r.h, 4);
+      ctx.fill();
+    }
 
     // ── Draw main menu text ──
     for (let i = 0; i < mainMenu.length; i++) {
@@ -990,39 +1100,6 @@ function P5Menu() {
       if (item.opacity < 0.01) continue;
       ctx.fillStyle = withAlpha(textColor, item.opacity);
       ctx.fillText(nestedData[i].title, item.x, item.y);
-    }
-
-    // ── Back button ──
-    const canGoBack = state.canGoBack();
-    anim.backButton.targetScale = canGoBack ? 1 : 0;
-    anim.backButton.scale += (anim.backButton.targetScale - anim.backButton.scale) * 0.12;
-
-    if (anim.backButton.scale > 0.01) {
-      let bx, by;
-      if (expandedNestedSubmenuId && anim.nestedItems.length > 0) {
-        bx = anim.nestedItems[0].x + 4;
-        by = anim.nestedItems[0].y - 30;
-      } else if (expandedSubmenuId && anim.subItems.length > 0) {
-        bx = anim.subItems[0].x + 4;
-        by = anim.subItems[0].y - 30;
-      } else if (anim.mainItems.length > 0) {
-        bx = anim.mainItems[0].x + 4;
-        by = anim.mainItems[0].y - 30;
-      } else {
-        bx = getMenuX() + 4;
-        by = 80;
-      }
-      anim.backButton.targetX = bx;
-      anim.backButton.targetY = by;
-      anim.backButton.x += (anim.backButton.targetX - anim.backButton.x) * 0.1;
-      anim.backButton.y += (anim.backButton.targetY - anim.backButton.y) * 0.1;
-
-      const backBtnSize = isMobile() ? 40 : 24;
-      const backHovered = isPointInRect(
-        mouse.x - anim.cameraX, mouse.y,
-        anim.backButton.x - backBtnSize / 2, anim.backButton.y, backBtnSize, backBtnSize
-      );
-      drawBackButton(ctx, anim.backButton.x, anim.backButton.y, anim.backButton.scale, textColor, backHovered);
     }
 
     ctx.restore(); // End camera offset
@@ -1060,12 +1137,6 @@ function P5Menu() {
         }
       }
     }
-    if (anim.backButton.scale > 0.3) {
-      const backSize = isMobile() ? 48 : 36;
-      if (isPointInRect(mx, my, anim.backButton.x - backSize / 2, anim.backButton.y, backSize, backSize)) {
-        isHovering = true;
-      }
-    }
     useNavigationStore.getState().setHoveringMenuItem(isHovering);
 
     // ── Next frame (or go idle until woken by input/navigation) ──
@@ -1075,9 +1146,10 @@ function P5Menu() {
       return;
     }
     rafRef.current = requestAnimationFrame(draw);
-  }, [getMenuX, getMenuPositionPx, updateDots, drawDots, drawBezierWire, drawBackButton]);
+  }, [getMenuPositionPx, updateDots, drawDots, drawBezierWire]);
 
   // ── Lifecycle ──
+  const wakeRef = useRef(() => {});
   useEffect(() => {
     setup();
 
@@ -1090,8 +1162,10 @@ function P5Menu() {
       framesSinceActivityRef.current = 0;
       if (rafRef.current === null) rafRef.current = requestAnimationFrame(draw);
     };
+    wakeRef.current = wake;
+    const canvases = [canvasRef.current, dotsCanvasRef.current].filter(Boolean);
     const wakeEvents = ['mousemove', 'mouseleave', 'mousedown', 'touchstart', 'touchmove', 'touchend'];
-    wakeEvents.forEach(ev => canvasRef.current?.addEventListener(ev, wake, { passive: true }));
+    canvases.forEach(c => wakeEvents.forEach(ev => c.addEventListener(ev, wake, { passive: true })));
     window.addEventListener('resize', wake);
     const unsubscribe = useNavigationStore.subscribe(wake);
 
@@ -1099,8 +1173,7 @@ function P5Menu() {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       unsubscribe();
       window.removeEventListener('resize', wake);
-      const canvas = canvasRef.current;
-      if (canvas) {
+      for (const canvas of canvases) {
         wakeEvents.forEach(ev => canvas.removeEventListener(ev, wake));
         if (canvas._onMouseMove) canvas.removeEventListener('mousemove', canvas._onMouseMove);
         if (canvas._onMouseDown) canvas.removeEventListener('mousedown', canvas._onMouseDown);
@@ -1113,10 +1186,275 @@ function P5Menu() {
       }
       canvasRef.current = null;
       ctxRef.current = null;
+      dotsCanvasRef.current = null;
+      dotsCtxRef.current = null;
     };
   }, [setup, draw]);
 
-  return <div ref={containerRef} className="p5-menu-container" />;
+  // ── Nav box ──
+  const currentView = useNavigationStore(state => state.currentView);
+  const navigateToHome = useNavigationStore(state => state.navigateToHome);
+  const goBack = useNavigationStore(state => state.goBack);
+  const canGoBack = useNavigationStore(state => state.canGoBack());
+  const isHome = currentView === 'home';
+  // Recomputed on resize too, since `layout` changes then
+  const menuHeight = useNavigationStore(state => getMenuMetrics(state).height);
+  const currentTitle = isHome || !currentView ? null : findTitle(navigationData.mainMenu, currentView);
+
+  // Opened by hovering with a mouse, or by tapping on touch screens
+  const [isExpanded, setIsExpanded] = useState(false);
+  // Opened from the keyboard; stays open until Escape, a click outside, or the
+  // mouse taking over
+  const [keyboardActive, setKeyboardActive] = useState(false);
+  const isOpen = isHome || isExpanded || keyboardActive;
+  const closeTimerRef = useRef(null);
+  const hoverSuppressedUntilRef = useRef(0);
+  const openAtPressRef = useRef(false);
+
+  const [layout, setLayout] = useState(() => ({ col: getColumnSize(), open: getOpenBoxSize() }));
+  const [headerSize, setHeaderSize] = useState(null);
+
+  useEffect(() => {
+    const onResize = () => setLayout({ col: getColumnSize(), open: getOpenBoxSize() });
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  // The collapsed box hugs the header text, which changes with the page and
+  // once Inter loads
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setHeaderSize({ w: Math.ceil(rect.width), h: Math.ceil(rect.height) });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Moving between home and a page always starts the box closed. Hover is
+  // ignored while it travels so the pointer it leaves behind can't reopen it.
+  useLayoutEffect(() => {
+    setIsExpanded(false);
+    hoverSuppressedUntilRef.current = performance.now() + HOVER_SUPPRESS_MS;
+  }, [isHome]);
+
+  // Clear menu hover once the box closes, since the canvas stops seeing the pointer
+  useEffect(() => {
+    if (isOpen) return;
+    mouseRef.current.x = -9999;
+    mouseRef.current.y = -9999;
+    wakeRef.current();
+  }, [isOpen]);
+
+  // Touch screens close the box with a tap anywhere outside it
+  useEffect(() => {
+    if (!isExpanded) return;
+    const closeOnOutsidePress = (e) => {
+      if (e.pointerType !== 'mouse' && !boxRef.current?.contains(e.target)) setIsExpanded(false);
+    };
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePress);
+  }, [isExpanded]);
+
+  const handlePointerMove = (e) => {
+    if (e.pointerType !== 'mouse' || performance.now() < hoverSuppressedUntilRef.current) return;
+    clearTimeout(closeTimerRef.current);
+    setIsExpanded(true);
+    // Real mouse movement over the box hands control back from the keyboard
+    // (the box resizing under a still pointer reports no movement)
+    if (keyboardRef.current.active && (e.movementX || e.movementY)) {
+      keyboardRef.current.active = false;
+      setKeyboardActive(false);
+    }
+  };
+
+  // ── Keyboard navigation ──
+  // Arrow keys open the box and move a highlight: up/down within a column,
+  // right/Enter to open, left to back out, Escape to close. Text fields, the
+  // lightbox, the right-click menu and the landing overlay keep their keys.
+  useEffect(() => {
+    const stopKeyboard = () => {
+      keyboardRef.current.active = false;
+      setKeyboardActive(false);
+      setIsExpanded(false);
+    };
+
+    const openItem = (state, kb, item) => {
+      if (kb.level === 'main') {
+        if (item.type === 'submenu') {
+          if (state.expandedSubmenuId !== item.id) state.navigateToSubmenu(item.id);
+          kb.level = 'submenu';
+          kb.index = 0;
+        } else {
+          openMainItem(item);
+        }
+      } else if (kb.level === 'submenu') {
+        if (item.type === 'submenu') {
+          if (state.expandedNestedSubmenuId !== item.id) state.navigateToNestedSubmenu(item.id);
+          kb.level = 'nested';
+          kb.index = 0;
+        } else {
+          state.navigateToSubpage(item.id, state.expandedSubmenuId);
+        }
+      } else {
+        state.navigateToSubpage(item.id, state.expandedSubmenuId, state.expandedNestedSubmenuId);
+      }
+    };
+
+    const backOut = (state, kb) => {
+      if (kb.level === 'nested') {
+        const parentIndex = getColumnItems(state, 'submenu').findIndex(s => s.id === state.expandedNestedSubmenuId);
+        state.navigateToNestedSubmenu(state.expandedNestedSubmenuId);
+        kb.level = 'submenu';
+        kb.index = Math.max(0, parentIndex);
+      } else if (kb.level === 'submenu') {
+        const parentIndex = getColumnItems(state, 'main').findIndex(m => m.id === state.expandedSubmenuId);
+        state.closeSubmenu();
+        kb.level = 'main';
+        kb.index = Math.max(0, parentIndex);
+      }
+    };
+
+    const onKeyDown = (e) => {
+      if (!KEYBOARD_KEYS.has(e.key) || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      if (document.querySelector('.lightbox-overlay, .context-menu')) return;
+      const state = useNavigationStore.getState();
+      if (state.isLandingDismissed !== true) return;
+      const kb = keyboardRef.current;
+      // Enter and Escape only act once the arrow keys have taken over
+      if (!kb.active && !e.key.startsWith('Arrow')) return;
+      e.preventDefault();
+
+      if (!kb.active) {
+        // The first press only reveals the highlight, on the current page's item
+        const metrics = getMenuMetrics(state);
+        const current = metrics.items.findIndex(item => item.id === state.currentView || item.id === state.activeMenuItem);
+        keyboardRef.current = { active: true, level: metrics.level, index: Math.max(0, current) };
+        setKeyboardActive(true);
+        wakeRef.current();
+        return;
+      }
+
+      // Re-sync if the mouse changed the menu since the last key
+      let items = getColumnItems(state, kb.level);
+      if (items.length === 0) {
+        const metrics = getMenuMetrics(state);
+        kb.level = metrics.level;
+        kb.index = 0;
+        items = metrics.items;
+      }
+      kb.index = Math.min(kb.index, items.length - 1);
+
+      if (e.key === 'ArrowDown') kb.index = Math.min(kb.index + 1, items.length - 1);
+      else if (e.key === 'ArrowUp') kb.index = Math.max(kb.index - 1, 0);
+      else if (e.key === 'ArrowRight' || e.key === 'Enter') openItem(state, kb, items[kb.index]);
+      else if (e.key === 'ArrowLeft') backOut(state, kb);
+      else if (e.key === 'Escape') stopKeyboard();
+      wakeRef.current();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // A click outside the box ends keyboard navigation
+  useEffect(() => {
+    if (!keyboardActive) return;
+    const onPointerDown = (e) => {
+      if (boxRef.current?.contains(e.target)) return;
+      keyboardRef.current.active = false;
+      setKeyboardActive(false);
+      setIsExpanded(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [keyboardActive]);
+
+  const handlePointerLeave = (e) => {
+    if (e.pointerType !== 'mouse') return;
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setIsExpanded(false), HOVER_CLOSE_DELAY_MS);
+  };
+
+  const handlePointerDown = (e) => {
+    openAtPressRef.current = isOpen;
+    if (e.pointerType !== 'mouse') setIsExpanded(true);
+  };
+
+  // The name leads home, but on touch the first tap only opens the box
+  const handleNameClick = () => {
+    if (openAtPressRef.current && !isHome) navigateToHome();
+  };
+
+  const showOutsideBack = canGoBack && !isOpen && Boolean(headerSize);
+
+  let boxStyle;
+  if (isOpen) {
+    boxStyle = {
+      top: isHome ? (layout.col.h - menuHeight) / 2 : BOX_MARGIN,
+      width: layout.open.w,
+      height: menuHeight,
+    };
+  } else if (headerSize) {
+    boxStyle = {
+      top: BOX_MARGIN,
+      // Never wider than the open box, so it stays inside the column on narrow windows
+      width: Math.min(headerSize.w + BOX_INSET + BOX_PAD_RIGHT, layout.open.w),
+      height: headerSize.h + BOX_PAD_Y * 2,
+    };
+  }
+
+  return (
+    <>
+      <div ref={containerRef} className="p5-menu-container" />
+      {/* Under the collapsed box; fades out while the box is open, which has its
+          own back button. Before the box in the DOM so the opening box covers it. */}
+      <button
+        type="button"
+        className={`icon-button nav-back-outside${showOutsideBack ? ' is-visible' : ''}`}
+        style={headerSize ? { top: BOX_MARGIN + headerSize.h + BOX_PAD_Y * 2 + OUTSIDE_BACK_GAP } : undefined}
+        onClick={goBack}
+        aria-label="Back"
+        tabIndex={showOutsideBack ? 0 : -1}
+      >
+        <BackArrowIcon />
+      </button>
+      <nav
+        ref={boxRef}
+        // Transitions start once the header is measured, so the box doesn't
+        // animate in from an unmeasured size
+        className={`nav-box${isOpen ? ' is-open' : ''}${headerSize ? ' is-animated' : ''}`}
+        style={boxStyle}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+        onPointerDown={handlePointerDown}
+      >
+        <div ref={menuHostRef} className="nav-box-menu" />
+        <div ref={headerRef} className="nav-box-header">
+          <button type="button" className="nav-box-name" onClick={handleNameClick}>
+            {navigationData.home.content.name}
+          </button>
+          {currentTitle && <div className="nav-box-current">{currentTitle}</div>}
+        </div>
+        <button
+          type="button"
+          className={`icon-button nav-box-back${canGoBack ? ' is-visible' : ''}`}
+          onClick={goBack}
+          aria-label="Back"
+          tabIndex={canGoBack && isOpen ? 0 : -1}
+        >
+          <BackArrowIcon />
+        </button>
+      </nav>
+    </>
+  );
 }
 
 export default P5Menu;

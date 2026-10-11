@@ -6,7 +6,6 @@
   height: 100vh;
   background-color: var(--color-content-area);
   border: none;
-  border-left: 0.5px solid var(--color-border);
   border-radius: 0;
   margin: 0;
   overflow: hidden;
@@ -40,27 +39,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Even margin around the video */
+  padding: 10px;
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
   transition: padding 0.5s ease;
 }
 
-.home-content .video-container.full-bleed {
+.home-content .video-container.home-video {
   width: 100%;
   height: 100%;
   padding: 0;
-  border-radius: 0;
+  border-radius: 8px;
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
   transition: all 0.5s ease;
 }
 
-.home-content .video-container.full-bleed video {
+.home-content .video-container.home-video video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 0;
-  transition: border-radius 0.5s ease;
 }
 
 /* Page content styles */
@@ -98,6 +97,13 @@
   padding: 0;
 }
 
+/* On desktop the case study header moves to the left column (CaseStudyInfo) */
+@media (min-width: 769px) {
+  .case-study-header {
+    display: none;
+  }
+}
+
 .case-study-header-row {
   display: flex;
   gap: 26px;
@@ -128,6 +134,22 @@
   margin: 0;
   color: var(--color-text);
   max-width: 500px;
+}
+
+.case-study-link {
+  align-self: flex-start;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Beats index.css's blue a:hover */
+.case-study-link:hover {
+  color: var(--color-text);
+  opacity: 0.6;
 }
 
 .case-study-right {
@@ -419,10 +441,24 @@
 }
 
 .work-list {
-  padding: 20px;
+  padding: 10px 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* Full row width (rows bleed 8px past the list padding) */
+.work-search {
+  width: calc(100% + 16px);
+  margin: 0 -8px;
+}
+
+.work-empty {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(11px, 1.2vw, 16px);
+  color: var(--color-text);
+  opacity: 0.5;
 }
 
 .work-row {
@@ -432,14 +468,14 @@
   padding: 6px 8px;
   margin: 0 -8px;
   border-radius: 4px;
-  border: 0.8px solid var(--color-border);
+  background-color: #ececec;
   cursor: pointer;
   gap: 20px;
   transition: background-color 0.2s ease;
 }
 
 .work-row:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: #e2e2e2;
 }
 
 .work-row-text {
@@ -474,7 +510,7 @@
 }
 
 .work-row-thumb {
-  width: clamp(44px, 6vw, 72px);
+  width: clamp(48px, 7vw, 88px);
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
   overflow: hidden;
@@ -503,87 +539,6 @@
   transform: scale(1.05);
 }
 
-/* ── Projects page (2-per-row card grid) ── */
-.projects-page {
-  padding: 20px;
-  overflow-y: auto;
-  height: 100%;
-}
-
-.projects-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 16px;
-}
-
-.project-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  min-height: 0;
-}
-
-.project-card-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-width: 0;
-  align-self: stretch;
-}
-
-.project-card-title {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(14px, 1.6vw, 20px);
-  font-weight: 700;
-  color: var(--color-text);
-  line-height: 1.2;
-}
-
-a.project-card-link {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-a.project-card-link:hover {
-  opacity: 0.7;
-}
-
-.project-card-desc {
-  font-family: 'Inter', sans-serif;
-  font-size: clamp(11px, 1.1vw, 14px);
-  font-weight: 400;
-  color: var(--color-text);
-  opacity: 0.5;
-  line-height: 1.3;
-}
-
-.project-card-image {
-  width: 50%;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: 4px;
-  aspect-ratio: 16 / 10;
-}
-
-.project-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.project-card-image .progressive-image-wrapper {
-  width: 100%;
-  height: 100%;
-}
-
-.project-card-image .image-placeholder {
-  padding-bottom: 0;
-  height: 100%;
-}
-
 /* Responsive - Mobile layout */
 @media (max-width: 768px) {
   .content-area {
@@ -596,7 +551,6 @@ a.project-card-link:hover {
     max-height: 65dvh;
     margin: 0;
     border-radius: 0;
-    border-left: none;
     border-top: 0.5px solid var(--color-border);
   }
 
@@ -665,6 +619,11 @@ a.project-card-link:hover {
     margin: 0;
   }
 
+  .work-search {
+    width: 100%;
+    margin: 0;
+  }
+
   .work-row-thumb {
     width: 60px;
   }
@@ -703,10 +662,6 @@ a.project-card-link:hover {
   opacity: 1.0;
   line-height: 0.9;
   margin: 0;
-}
-
-.project-card-image.clickable {
-  cursor: pointer;
 }
 
 .block-item video,
@@ -1003,7 +958,6 @@ a.project-card-link:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   cursor: pointer;
 }
 

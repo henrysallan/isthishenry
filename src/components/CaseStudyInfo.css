@@ -1,0 +1,83 @@
+/* Centred in the left column, lined up with the "Henry Allan" text in the nav box.
+   Above the dot grid, below the nav box when it opens over it. */
+.case-info {
+  position: fixed;
+  top: 50%;
+  left: 20px;
+  width: calc(100vw / 4 - 40px);
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: 'Inter', sans-serif;
+  color: var(--color-text);
+  /* Let the dot field keep reacting to the pointer underneath */
+  pointer-events: none;
+  animation: case-info-in 0.4s ease both;
+}
+
+@keyframes case-info-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.case-info-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.case-info-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.case-info-year {
+  flex-shrink: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-text-light);
+}
+
+.case-info-description {
+  max-width: 240px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.case-info-tags {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.5;
+}
+
+.case-info-link {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  /* The rest of the block lets the pointer through to the dot grid */
+  pointer-events: auto;
+}
+
+/* Beats index.css's blue a:hover */
+.case-info-link:hover {
+  color: var(--color-text);
+  opacity: 0.6;
+}
+
+/* Phones have no left column; the header stays in the content area there */
+@media (max-width: 768px) {
+  .case-info {
+    display: none;
+  }
+}

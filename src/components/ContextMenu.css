@@ -1,0 +1,73 @@
+/* Same surface as the nav box. Above the lightbox (100000) and below the custom
+   cursor, which sits on top of everything. */
+.context-menu {
+  position: fixed;
+  z-index: 100001;
+  min-width: 160px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 4px;
+  background: #ececec;
+  /* A soft lift so it reads as floating over the page, which is nearly the same grey */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  animation: context-menu-in 0.12s ease;
+}
+
+.context-menu:focus {
+  outline: none;
+}
+
+@keyframes context-menu-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 3px;
+  /* Each option sits on its own light rect, a step darker on hover */
+  background: #e5e5e5;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: none;
+  /* Lighter than body text; the globe icons follow it */
+  color: color-mix(in srgb, var(--color-text) 60%, var(--color-background));
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.context-menu-item:hover,
+.context-menu-item:focus-visible {
+  background-color: #dedede;
+  /* A little darker on hover; also beats index.css's blue a:hover on the links */
+  color: color-mix(in srgb, var(--color-text) 72%, var(--color-background));
+}
+
+.context-menu-icon {
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.context-menu-divider {
+  height: 1px;
+  margin: 2px 8px;
+  background: var(--color-text);
+  opacity: 0.1;
+}
+
+/* index.css rings every focused button; the hover fill is enough here */
+.context-menu-item:focus {
+  outline: none;
+}

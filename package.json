@@ -14,6 +14,7 @@
     "perf:serve": "node perf/serve.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "gsap": "^3.14.1",
     "hls.js": "^1.6.15",
     "react": "^19.2.0",

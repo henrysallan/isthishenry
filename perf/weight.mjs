@@ -80,7 +80,6 @@ function pages() {
       } else {
         const media = [];
         for (const b of c.blocks || []) if (b.src) media.push(b.src.startsWith('http') ? b.src : (c.baseUrl || '') + b.src);
-        for (const p of c.projects || []) media.push(p.video || p.image);
         out.push({ route, media: media.filter(Boolean) });
       }
     }

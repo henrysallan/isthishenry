@@ -1,4 +1,4 @@
-import { navigationData } from '../data/navigation';
+import { navigationData } from '../data/navigation.js';
 
 /**
  * URL ↔ Navigation State sync utility
@@ -6,7 +6,8 @@ import { navigationData } from '../data/navigation';
  * URL structure:
  *   /                        → home
  *   /about                   → about page
- *   /projects                → projects page
+ *   /projects                → projects list
+ *   /projects/poetry-map     → project page
  *   /contact                 → contact page
  *   /work                    → work submenu grid
  *   /work/expensify          → work subpage
@@ -77,7 +78,7 @@ function buildRoutes() {
         }
       }
     } else if (item.type === 'page') {
-      // Top-level page (e.g. /about, /projects)
+      // Top-level page (e.g. /about)
       const pagePath = `/${item.id}`;
       idToPath[item.id] = pagePath;
       pathToRoute[pagePath] = {

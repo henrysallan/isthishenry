@@ -33,4 +33,9 @@ export default defineConfig([
       'react-hooks/preserve-manual-memoization': 'warn',
     },
   },
+  // Server and build code runs in Node
+  {
+    files: ['api/**/*.js', 'vite.config.js', 'perf/**/*.mjs', 'scripts/**/*.mjs'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+  },
 ])

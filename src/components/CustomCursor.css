@@ -3,7 +3,8 @@
   top: 0;
   left: 0;
   pointer-events: none;
-  z-index: 10000;
+  /* Above everything, including the lightbox and the right-click menu */
+  z-index: 100002;
   transform: translate(-50%, -50%); /* moved by translate() writes from CustomCursor.jsx */
   opacity: 0;
   transition: opacity 0.2s ease;
