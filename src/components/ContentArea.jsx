@@ -702,7 +702,7 @@ function ContentArea() {
             .map((block) => {
               if (block.type === 'text' || !block.src) return null;
               const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
-              const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
+              const isVideo = block.type === 'video' || /\.(mp4|mov|webm|m3u8)$/i.test(fullSrc);
               const isVimeo = block.type === 'vimeo';
               if (isVimeo) return null; // skip vimeo embeds from lightbox
               return { src: fullSrc, type: isVideo ? 'video' : 'image', alt: `${contentData.title}` };
@@ -731,7 +731,7 @@ function ContentArea() {
                   );
                 }
                 const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
-                const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(fullSrc);
+                const isVideo = block.type === 'video' || /\.(mp4|mov|webm|m3u8)$/i.test(fullSrc);
                 const isVimeo = block.type === 'vimeo';
                 return (
                   <div

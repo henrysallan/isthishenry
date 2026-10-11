@@ -12,6 +12,9 @@
 // site uses today, which is swapped for https://stream.mux.com/{playbackId}.m3u8.
 // Nothing is written unless every video maps to a stream that responds, and the
 // files are restored if navigation.js still resolves any video to its old URL.
+//
+// GIFs converted by scripts/convert-gifs.mjs are swapped too once their upload
+// shows up in framerate-videos.json; until then they're reported and left as GIFs.
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -20,6 +23,7 @@ import { CDN_ORIGIN, navigationUrls, restore, rewriteSourceUrls } from './lib/so
 
 const VIMEO_HLS = /^https:\/\/player\.vimeo\.com\/external\/\d+\.m3u8/;
 const VIDEO_FILE = /\.(mp4|mov|mkv|webm)$/i;
+const GIF_FILE = /\.gif$/i;
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dryRun = process.argv.includes('--dry-run');
@@ -38,13 +42,14 @@ const canonical = (title) => title.replace(/^\d+[\s_]+/, '').replace(/[\s_]+/g, 
 
 const mappings = [];
 const unmatched = [];
-for (const f of manifest.files.filter((file) => VIDEO_FILE.test(file.name))) {
+const pendingGifs = [];
+for (const f of manifest.files.filter((file) => VIDEO_FILE.test(file.name) || GIF_FILE.test(file.name))) {
   const title = path.posix.basename(f.name, path.posix.extname(f.name));
   const exact = framerate.videos.filter((v) => v.title === title);
   const candidates = exact.length ? exact : framerate.videos.filter((v) => canonical(v.title) === canonical(title));
   const upload = candidates.find((v) => !v.folder) ?? candidates[0];
   if (!upload) {
-    unmatched.push(title);
+    (GIF_FILE.test(f.name) ? pendingGifs : unmatched).push(title);
     continue;
   }
   mappings.push({
@@ -60,6 +65,9 @@ for (const f of manifest.files.filter((file) => VIDEO_FILE.test(file.name))) {
 console.log(`${mappings.length} videos matched to FrameRate uploads`);
 for (const m of mappings.filter((m) => m.uploadTitle !== m.title)) {
   console.log(`  ${m.title}  ←  "${m.uploadTitle}"`);
+}
+if (pendingGifs.length) {
+  console.log(`GIFs not on FrameRate yet (left as GIFs):\n  ${pendingGifs.join('\n  ')}`);
 }
 if (unmatched.length) {
   console.error(`No FrameRate upload found for:\n  ${unmatched.join('\n  ')}`);
