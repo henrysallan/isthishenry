@@ -7,7 +7,6 @@ import ReturnArrow from './components/ReturnArrow';
 import HomeTextOverlay from './components/HomeTextOverlay';
 import { useNavigationStore } from './store/navigationStore';
 import { colorThemes } from './config/theme';
-import { preloadAllAssets } from './utils/preloader';
 import './App.css';
 
 function App() {
@@ -17,15 +16,6 @@ function App() {
   useEffect(() => {
     const cleanup = useNavigationStore.getState().setupPopstateListener();
     return cleanup;
-  }, []);
-
-  // Start preloading assets immediately on mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      preloadAllAssets();
-    }, 100);
-    
-    return () => clearTimeout(timer);
   }, []);
 
   // Update CSS variables when theme changes

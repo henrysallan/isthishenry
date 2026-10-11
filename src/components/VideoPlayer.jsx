@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import LoadingSpinner from './LoadingSpinner';
+import { muxPoster, useVideoSource } from '../utils/videoSource';
 import './VideoPlayer.css';
 
 function VideoPlayer({ src, autoplay = false, className = '' }) {
   const videoRef = useRef(null);
+  useVideoSource(videoRef, src);
   const timelineRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -206,7 +208,7 @@ function VideoPlayer({ src, autoplay = false, className = '' }) {
 
       <video
         ref={videoRef}
-        src={src}
+        poster={muxPoster(src)}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleCanPlay}

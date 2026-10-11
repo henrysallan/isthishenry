@@ -5,8 +5,11 @@ import { R2Video } from '../utils/videoStreaming';
 import VideoPlayer from './VideoPlayer';
 import LoadingSpinner from './LoadingSpinner';
 import { loadHls } from '../utils/loadHls';
+import { muxPoster } from '../utils/videoSource';
 import CyclingText from './CyclingText';
 import Lightbox from './Lightbox';
+import StreamVideo from './StreamVideo';
+import { columnSizes, responsiveImage } from '../utils/responsiveImage';
 import './ContentArea.css';
 
 // Collect all media URLs from the Sketches section for the about page showcase
@@ -20,7 +23,7 @@ function collectSketchesMedia() {
         for (const block of item.content.blocks) {
           if (!block.src) continue;
           const src = block.src.startsWith('http') ? block.src : `${baseUrl}${block.src}`;
-          const isVideo = block.type === 'video' || /\.(mp4|mov|webm)$/i.test(src);
+          const isVideo = block.type === 'video' || /\.(mp4|mov|webm|m3u8)$/i.test(src);
           media.push({ src, type: isVideo ? 'video' : 'image' });
         }
         return;
@@ -115,7 +118,7 @@ function AboutMediaSlot() {
     if (!item) return null;
     const cls = `about-video-layer ${active === idx ? 'front' : 'back'}`;
     if (item.type === 'video') {
-      return <video ref={videoRefs[idx]} src={item.src} muted loop playsInline autoPlay className={cls} />;
+      return <StreamVideo ref={videoRefs[idx]} src={item.src} muted loop playsInline autoPlay className={cls} />;
     }
     return <img src={item.src} alt="Sketch" className={cls} />;
   };
@@ -130,131 +133,54 @@ function AboutMediaSlot() {
 
 // Progressive image loading component - shows blur placeholder until loaded
 // Includes retry logic for failed/stalled Cloudflare R2 requests
-function ProgressiveImage({ src, alt, className, onClick }) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(null);
-  const [hasError, setHasError] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
-  const retriesRef = useRef(0);
-  const fakeProgressRef = useRef(null);
-  const targetFakeProgress = useRef(Math.floor(Math.random() * 16) + 85);
-  const maxRetries = 3;
+// Published images (scripts/publish-images.mjs) show a tiny blurred preview at
+// once, at their real aspect ratio, then load the sharp version, at the width the
+// screen needs, as they near the viewport. Other images just load lazily.
+function ProgressiveImage({ src, alt, className, onClick, sizes = columnSizes() }) {
+  const variant = responsiveImage(src);
+  const [loadedSrc, setLoadedSrc] = useState(null);
+  const [failedSrc, setFailedSrc] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+  const isLoaded = loadedSrc === src;
 
-  // Fake progress animation
-  useEffect(() => {
-    if (!isLoaded && !hasError && loadProgress < targetFakeProgress.current) {
-      fakeProgressRef.current = setInterval(() => {
-        setLoadProgress(prev => {
-          const increment = Math.random() * 3 + 0.5;
-          const next = prev + increment;
-          if (next >= targetFakeProgress.current) {
-            clearInterval(fakeProgressRef.current);
-            return targetFakeProgress.current;
-          }
-          return next;
-        });
-      }, 100);
-    }
-    return () => {
-      if (fakeProgressRef.current) clearInterval(fakeProgressRef.current);
+  if (failedSrc === src) {
+    const retry = (e) => {
+      e.stopPropagation();
+      setFailedSrc(null);
+      setAttempt((n) => n + 1);
     };
-  }, [isLoaded, hasError]);
-
-  useEffect(() => {
-    setIsLoaded(false);
-    setCurrentSrc(null);
-    setHasError(false);
-    setLoadProgress(0);
-    retriesRef.current = 0;
-    targetFakeProgress.current = Math.floor(Math.random() * 16) + 85;
-    
-    let isMounted = true;
-    let timeoutId = null;
-    
-    const attemptLoad = () => {
-      const img = new Image();
-      
-      // Set a timeout for stalled requests
-      timeoutId = setTimeout(() => {
-        if (!isMounted) return;
-        retriesRef.current++;
-        if (retriesRef.current < maxRetries) {
-          console.log(`[ProgressiveImage] Timeout, retrying (${retriesRef.current}/${maxRetries}): ${src}`);
-          attemptLoad();
-        } else {
-          setHasError(true);
-        }
-      }, 8000); // 8 second timeout per attempt
-      
-      img.onload = () => {
-        clearTimeout(timeoutId);
-        if (isMounted) {
-          setLoadProgress(100);
-          if (fakeProgressRef.current) clearInterval(fakeProgressRef.current);
-          setCurrentSrc(src);
-          setIsLoaded(true);
-        }
-      };
-      
-      img.onerror = () => {
-        clearTimeout(timeoutId);
-        if (!isMounted) return;
-        retriesRef.current++;
-        if (retriesRef.current < maxRetries) {
-          console.log(`[ProgressiveImage] Error, retrying (${retriesRef.current}/${maxRetries}): ${src}`);
-          // Add small delay before retry with cache-busting
-          setTimeout(attemptLoad, 500 * retriesRef.current);
-        } else {
-          setHasError(true);
-        }
-      };
-      
-      // Add cache-busting for retries to avoid cached failures
-      const finalUrl = retriesRef.current > 0 
-        ? `${src}${src.includes('?') ? '&' : '?'}_retry=${retriesRef.current}` 
-        : src;
-      img.src = finalUrl;
-    };
-    
-    attemptLoad();
-    
-    return () => {
-      isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [src]);
-
-  // Manual retry handler for user interaction
-  const handleRetry = (e) => {
-    e.stopPropagation();
-    retriesRef.current = 0;
-    setHasError(false);
-    setIsLoaded(false);
-    setCurrentSrc(null);
-    // Force re-run effect by updating a dependency - we'll do it via state
-  };
-
-  return (
-    <div className={`progressive-image-wrapper ${isLoaded ? 'loaded' : 'loading'} ${hasError ? 'error' : ''}`} onClick={hasError ? handleRetry : onClick}>
-      {hasError ? (
+    return (
+      <div className="progressive-image-wrapper error" onClick={retry}>
         <div className="image-error-placeholder">
           <span>⟳</span>
         </div>
-      ) : (
-        <>
-          {!isLoaded && (
-            <div className="image-placeholder">
-              <span className="loading-number">{Math.floor(loadProgress)}</span>
-            </div>
-          )}
-          <img 
-            src={currentSrc || undefined}
-            alt={alt}
-            className={className}
-            style={!isLoaded ? { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' } : undefined}
-          />
-        </>
-      )}
+      </div>
+    );
+  }
+
+  // Until it loads, an image without size data holds a 4:3 space.
+  const aspectRatio = variant ? `${variant.width} / ${variant.height}` : isLoaded ? undefined : '4 / 3';
+  return (
+    <div
+      className={`progressive-image-wrapper ${isLoaded ? 'loaded' : 'loading'}`}
+      style={aspectRatio ? { aspectRatio } : undefined}
+      onClick={onClick}
+    >
+      {variant && <img className="image-blur" src={variant.placeholder} alt="" aria-hidden="true" />}
+      <img
+        key={attempt}
+        src={src}
+        srcSet={variant?.srcSet}
+        sizes={variant ? sizes : undefined}
+        width={variant?.width}
+        height={variant?.height}
+        alt={alt}
+        className={className}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoadedSrc(src)}
+        onError={() => setFailedSrc(src)}
+      />
     </div>
   );
 }
@@ -264,6 +190,7 @@ function ProgressiveImage({ src, alt, className, onClick }) {
 function LazyVideo({ src, poster, aspectRatio }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
+  const inViewRef = useRef(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -331,7 +258,7 @@ function LazyVideo({ src, poster, aspectRatio }) {
         });
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           // Auto-play once manifest is ready if already in view
-          video.play().catch(() => {});
+          if (inViewRef.current) video.play().catch(() => {});
         });
         hls.on(Hls.Events.ERROR, (_, data) => {
           if (data.fatal) {
@@ -349,6 +276,7 @@ function LazyVideo({ src, poster, aspectRatio }) {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          inViewRef.current = entry.isIntersecting;
           if (entry.isIntersecting) {
             video.play().catch(() => {});
           } else {
@@ -420,7 +348,7 @@ function LazyVideo({ src, poster, aspectRatio }) {
       <video
         ref={videoRef}
         src={isHLS ? undefined : videoSrc}
-        poster={poster}
+        poster={poster ?? muxPoster(src)}
         muted
         loop
         playsInline
@@ -463,7 +391,7 @@ function WorkList({ items, onItemClick }) {
       <div className="work-list">
         {items.map((item) => {
           const thumbnailSrc = item.content?.thumbnail;
-          const isVideo = thumbnailSrc && (thumbnailSrc.endsWith('.mp4') || thumbnailSrc.endsWith('.mov') || thumbnailSrc.endsWith('.webm'));
+          const isVideo = thumbnailSrc && /\.(mp4|mov|webm|m3u8)$/i.test(thumbnailSrc);
           return (
             <div
               key={item.id}
@@ -477,9 +405,9 @@ function WorkList({ items, onItemClick }) {
               <div className="work-row-thumb">
                 {thumbnailSrc && (
                   isVideo ? (
-                    <video src={thumbnailSrc} muted loop playsInline autoPlay />
+                    <StreamVideo src={thumbnailSrc} muted loop playsInline autoPlay />
                   ) : (
-                    <img src={thumbnailSrc} alt={item.title} />
+                    <img src={thumbnailSrc} srcSet={responsiveImage(thumbnailSrc)?.srcSet} sizes="72px" alt={item.title} />
                   )
                 )}
               </div>
@@ -572,7 +500,7 @@ function ContentArea() {
         <div className="home-content">
           <div className="video-container full-bleed">
             <VideoPlayer 
-              src="https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4"
+              src="https://stream.mux.com/9iCvQyU2AW3HaJprVMaLiGdUdyTnVEa400q74fDZIcjM.m3u8"
               autoplay={true}
             />
           </div>
@@ -614,7 +542,7 @@ function ContentArea() {
                   {project.video ? (
                     <LazyVideo src={project.video} />
                   ) : (
-                    <ProgressiveImage src={project.image} alt={project.title} />
+                    <ProgressiveImage src={project.image} alt={project.title} sizes={columnSizes(0.5)} />
                   )}
                 </div>
               </div>
@@ -820,6 +748,7 @@ function ContentArea() {
                       <ProgressiveImage
                         src={fullSrc}
                         alt={`${contentData.title} - ${index + 1}`}
+                        sizes={columnSizes((block.colSpan || 12) / 12)}
                       />
                     )}
                   </div>

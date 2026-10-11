@@ -34,3 +34,4 @@ dist-ssr
 # Local mirror of CDN media (scripts/mirror-cdn.mjs)
 cdn-mirror
 framerate-export
+image-build
