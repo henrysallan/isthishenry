@@ -7,6 +7,7 @@ Re-run the same measurements after each area and add a column, so every change h
 | Area | Done | Headline |
 |---|---|---|
 | C (render loops) | 2026-10-11 | Idle React commits went from 2 per frame to **0**. JS went from 474 to **230 KB brotli** (p5 removed with the logo animation). |
+| B (bundle) | 2026-10-11 | hls.js now loads only on pages with Vimeo streams. The JS every page loads went from 230 to **101 KB brotli**. |
 
 ---
 
@@ -22,14 +23,15 @@ Re-run the same measurements after each area and add a column, so every change h
 
 From `npm run perf:weight` (raw data: [results/baseline-weight.json](results/baseline-weight.json)).
 
-| | Baseline | After C |
-|---|---|---|
-| JS | **1,908 KB** raw / 572 KB gzip / **474 KB brotli**, 1 chunk | **876 KB** raw / 273 KB gzip / **230 KB brotli** |
-| Fonts | 738 KB raw / 283 KB brotli (2 TTFs) | same |
-| CDN media referenced | 150 files, **2,201 MB** | same |
-| Images over 5 MB | **57** (largest 23 MB) | same |
-| CDN files with `Cache-Control` | **0 / 150** | same |
-| Preloader, every visit | **928 MB** of images fully downloaded + 388 MB of video with `preload="auto"` | same |
+| | Baseline | After C | After B |
+|---|---|---|---|
+| JS loaded on every page | **1,908 KB** raw / 572 KB gzip / **474 KB brotli**, 1 chunk | **876 KB** raw / 273 KB gzip / **230 KB brotli** | **368 KB** raw / 117 KB gzip / **101 KB brotli** |
+| JS loaded on demand | none | none | hls.js: 510 KB raw / 130 KB brotli, only on pages with `.m3u8` streams (currently Smokeye Hill) |
+| Fonts | 738 KB raw / 283 KB brotli (2 TTFs) | same | same |
+| CDN media referenced | 150 files, **2,201 MB** | same | same |
+| Images over 5 MB | **57** (largest 23 MB) | same | same |
+| CDN files with `Cache-Control` | **0 / 150** | same | same |
+| Preloader, every visit | **928 MB** of images fully downloaded + 388 MB of video with `preload="auto"` | same | same |
 
 **Media per page.** These sums assume every item on the page is fully loaded. Videos stream, so this is the upper bound a visitor can pull.
 

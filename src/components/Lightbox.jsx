@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import Hls from 'hls.js';
+import { loadHls } from '../utils/loadHls';
 import './Lightbox.css';
 
 function LightboxVideo({ src }) {
@@ -11,30 +11,41 @@ function LightboxVideo({ src }) {
     const video = videoRef.current;
     if (!video) return;
 
-    if (isHLS && Hls.isSupported()) {
-      const hls = new Hls();
-      hlsRef.current = hls;
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(src));
-      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          hls.destroy();
-          hlsRef.current = null;
-          if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = src;
-            video.load();
-            video.play().catch(() => {});
-          }
-        }
-      });
-    } else {
+    let cancelled = false;
+    const playNatively = () => {
       video.src = src;
       video.load();
       video.play().catch(() => {});
+    };
+
+    if (isHLS) {
+      loadHls().then((Hls) => {
+        if (cancelled) return;
+        if (!Hls.isSupported()) {
+          playNatively();
+          return;
+        }
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(src));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            hls.destroy();
+            hlsRef.current = null;
+            if (video.canPlayType('application/vnd.apple.mpegurl')) playNatively();
+          }
+        });
+      }).catch(() => {
+        if (!cancelled && video.canPlayType('application/vnd.apple.mpegurl')) playNatively();
+      });
+    } else {
+      playNatively();
     }
 
     return () => {
+      cancelled = true;
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;

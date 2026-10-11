@@ -4,7 +4,7 @@ import { navigationData } from '../data/navigation';
 import { R2Video } from '../utils/videoStreaming';
 import VideoPlayer from './VideoPlayer';
 import LoadingSpinner from './LoadingSpinner';
-import Hls from 'hls.js';
+import { loadHls } from '../utils/loadHls';
 import CyclingText from './CyclingText';
 import Lightbox from './Lightbox';
 import './ContentArea.css';
@@ -298,39 +298,52 @@ function LazyVideo({ src, poster, aspectRatio }) {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    let cancelled = false;
+
+    // When hls.js can't play the stream (e.g. CORS) or fails to load
+    const fallBackFromHls = () => {
+      if (video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL')) {
+        video.src = src;
+        video.load();
+        video.play().catch(() => {});
+      } else if (isVimeoHLS) {
+        // Fall back to Vimeo iframe embed (bypasses CORS)
+        setUseVimeoFallback(true);
+      } else {
+        handleError();
+      }
+    };
 
     // Set up HLS if needed
-    if (isHLS && Hls.isSupported()) {
-      const hls = new Hls();
-      hlsRef.current = hls;
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        hls.loadSource(src);
-      });
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        // Auto-play once manifest is ready if already in view
-        video.play().catch(() => {});
-      });
-      hls.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          // On fatal error (e.g. CORS), destroy hls.js and try native playback
-          hls.destroy();
-          hlsRef.current = null;
-          if (video.canPlayType('application/vnd.apple.mpegurl') || video.canPlayType('application/x-mpegURL')) {
-            video.src = src;
-            video.load();
-            video.play().catch(() => {});
-          } else if (isVimeoHLS) {
-            // Fall back to Vimeo iframe embed (bypasses CORS)
-            setUseVimeoFallback(true);
-          } else {
-            handleError();
-          }
+    if (isHLS) {
+      loadHls().then((Hls) => {
+        if (cancelled) return;
+        if (!Hls.isSupported()) {
+          // Native HLS (Safari / browsers with native support)
+          video.src = src;
+          return;
         }
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls.loadSource(src);
+        });
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          // Auto-play once manifest is ready if already in view
+          video.play().catch(() => {});
+        });
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            // On fatal error, destroy hls.js and try native playback
+            hls.destroy();
+            hlsRef.current = null;
+            fallBackFromHls();
+          }
+        });
+      }).catch(() => {
+        if (!cancelled) fallBackFromHls();
       });
-    } else if (isHLS) {
-      // Native HLS (Safari / browsers with native support)
-      video.src = src;
     }
 
     const observer = new IntersectionObserver(
@@ -348,6 +361,7 @@ function LazyVideo({ src, poster, aspectRatio }) {
 
     observer.observe(video);
     return () => {
+      cancelled = true;
       observer.disconnect();
       if (hlsRef.current) {
         hlsRef.current.destroy();

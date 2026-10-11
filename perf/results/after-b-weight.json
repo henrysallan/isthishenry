@@ -1,0 +1,247 @@
+{
+  "label": "after-b",
+  "date": "2026-10-11T03:47:28.549Z",
+  "build": {
+    "files": [
+      {
+        "file": "assets/hls-BsbqMBRB.js",
+        "rawKB": 509.7,
+        "gzipKB": 157.1,
+        "brotliKB": 129.5
+      },
+      {
+        "file": "assets/index-Di9qPx0D.js",
+        "rawKB": 367.5,
+        "gzipKB": 116.5,
+        "brotliKB": 101.3
+      },
+      {
+        "file": "assets/index-latIFcyV.css",
+        "rawKB": 22.4,
+        "gzipKB": 4.6,
+        "brotliKB": 4
+      },
+      {
+        "file": "font/Inter-Regular.ttf",
+        "rawKB": 402,
+        "gzipKB": 192.4,
+        "brotliKB": 153.8
+      },
+      {
+        "file": "font/Inter_Bold.ttf",
+        "rawKB": 336,
+        "gzipKB": 164.9,
+        "brotliKB": 129.6
+      },
+      {
+        "file": "index.html",
+        "rawKB": 2.3,
+        "gzipKB": 0.8,
+        "brotliKB": 0.6
+      }
+    ],
+    "jsKB": {
+      "raw": 877.2,
+      "gzip": 273.6,
+      "brotli": 230.8
+    },
+    "fontKB": {
+      "raw": 738,
+      "brotli": 283.4
+    },
+    "jsChunks": 2
+  },
+  "media": {
+    "uniqueFiles": 150,
+    "totalMB": 2201.4,
+    "byExtension": {
+      "mp4": {
+        "files": 27,
+        "mb": 1016
+      },
+      "png": {
+        "files": 103,
+        "mb": 809
+      },
+      "gif": {
+        "files": 6,
+        "mb": 129.6
+      },
+      "mov": {
+        "files": 9,
+        "mb": 246.1
+      },
+      "jpg": {
+        "files": 5,
+        "mb": 1.9
+      }
+    },
+    "imagesOver5MB": 57,
+    "largestImageMB": 51.7,
+    "withCacheControl": 0,
+    "errors": []
+  },
+  "preloader": {
+    "imagesFullyDownloaded": 111,
+    "imagesMB": 927.8,
+    "priorityVideosPreloadAuto": 9,
+    "priorityVideosMB": 387.8,
+    "otherVideosMetadataOnly": 32
+  },
+  "pages": [
+    {
+      "route": "/work/worksuite",
+      "items": 20,
+      "hls": 0,
+      "mb": 337.7,
+      "largestMB": 22.7
+    },
+    {
+      "route": "/work/kalshi",
+      "items": 8,
+      "hls": 0,
+      "mb": 322.2,
+      "largestMB": 93.5
+    },
+    {
+      "route": "/",
+      "items": 1,
+      "hls": 0,
+      "mb": 279.7,
+      "largestMB": 279.7
+    },
+    {
+      "route": "/work/more/sketches",
+      "items": 20,
+      "hls": 0,
+      "mb": 258.4,
+      "largestMB": 53.1
+    },
+    {
+      "route": "/work",
+      "items": 7,
+      "hls": 0,
+      "mb": 202.2,
+      "largestMB": 89.4
+    },
+    {
+      "route": "/work/mschf",
+      "items": 14,
+      "hls": 0,
+      "mb": 202.1,
+      "largestMB": 33.5
+    },
+    {
+      "route": "/work/more/michael-m",
+      "items": 8,
+      "hls": 0,
+      "mb": 195.1,
+      "largestMB": 51.7
+    },
+    {
+      "route": "/work/expensify",
+      "items": 9,
+      "hls": 0,
+      "mb": 134.5,
+      "largestMB": 44.9
+    },
+    {
+      "route": "/work/more",
+      "items": 9,
+      "hls": 0,
+      "mb": 118.6,
+      "largestMB": 50.7
+    },
+    {
+      "route": "/work/more/on-slide",
+      "items": 18,
+      "hls": 0,
+      "mb": 102,
+      "largestMB": 14.9
+    },
+    {
+      "route": "/projects",
+      "items": 5,
+      "hls": 0,
+      "mb": 100.6,
+      "largestMB": 51.5
+    },
+    {
+      "route": "/work/more/fact-machine",
+      "items": 1,
+      "hls": 0,
+      "mb": 79.6,
+      "largestMB": 79.6
+    },
+    {
+      "route": "/work/welcome-jpeg",
+      "items": 2,
+      "hls": 0,
+      "mb": 55.1,
+      "largestMB": 28.8
+    },
+    {
+      "route": "/work/more/modl",
+      "items": 1,
+      "hls": 0,
+      "mb": 38.3,
+      "largestMB": 38.3
+    },
+    {
+      "route": "/work/more/psyche-organic",
+      "items": 4,
+      "hls": 0,
+      "mb": 26.8,
+      "largestMB": 10.2
+    },
+    {
+      "route": "/work/more/lattafa",
+      "items": 5,
+      "hls": 0,
+      "mb": 17.9,
+      "largestMB": 6.6
+    },
+    {
+      "route": "/work/it-cosmetics",
+      "items": 17,
+      "hls": 0,
+      "mb": 11.9,
+      "largestMB": 7.9
+    },
+    {
+      "route": "/work/more/guardrails-ai",
+      "items": 13,
+      "hls": 0,
+      "mb": 9.3,
+      "largestMB": 2.4
+    },
+    {
+      "route": "/work/more/iraq-war-civ-casualties",
+      "items": 2,
+      "hls": 0,
+      "mb": 7,
+      "largestMB": 6.1
+    },
+    {
+      "route": "/work/smokeye-hill",
+      "items": 7,
+      "hls": 7,
+      "mb": 0,
+      "largestMB": 0
+    },
+    {
+      "route": "/about",
+      "items": 0,
+      "hls": 0,
+      "mb": 0,
+      "largestMB": 0
+    },
+    {
+      "route": "/contact",
+      "items": 0,
+      "hls": 0,
+      "mb": 0,
+      "largestMB": 0
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 _First mapped 2026-10-10. This is the starting point for optimization work, one area at a time. Update it as areas get done._
 
-**Progress:** ✅ K (2026-10-10) · ✅ Baseline recorded in [perf/BASELINE.md](perf/BASELINE.md) (Lighthouse still pending) · ✅ C (2026-10-11)
+**Progress:** ✅ K (2026-10-10) · ✅ Baseline recorded in [perf/BASELINE.md](perf/BASELINE.md) (Lighthouse still pending) · ✅ C (2026-10-11) · ✅ B (2026-10-11)
 
 > ⚠️ **Live site:** every deep link (`/work`, `/about`, case studies) returns 404 in production, because `vercel.json` isn't deployed. See [perf/BASELINE.md §0](perf/BASELINE.md).
 
@@ -145,15 +145,20 @@ The areas are ordered by expected impact. Each one is meant to be a self-contain
 - The retry logic adds cache-busting query strings (`?_retry=n`), which defeats CDN caching on the very retries meant to help.
 - **To decide:** an encoding pipeline (script vs. a service), thumbnail and poster conventions, and whether to keep any preloading at all. A likely option is to preload only the next likely click.
 
-### B. JS bundle & dependencies 🔴
-**Where:** [ContentArea.jsx](src/components/ContentArea.jsx), [Lightbox.jsx](src/components/Lightbox.jsx), [package.json](package.json), [vite.config.js](vite.config.js)
+### B. JS bundle & dependencies ✅ *done 2026-10-11*
+**Where:** [loadHls.js](src/utils/loadHls.js), [ContentArea.jsx](src/components/ContentArea.jsx), [Lightbox.jsx](src/components/Lightbox.jsx), [package.json](package.json)
 
-- ✅ **p5 (about 1 MB) is gone.** It was removed in area C together with the logo animation; the name is plain text now. The JS dropped from 474 to 230 KB brotli, which already meets the target below.
-- **hls.js (510 KB)** is imported statically by ContentArea and Lightbox for 7 Vimeo blocks. It could be loaded with a dynamic `import()` the first time an `.m3u8` appears; Safari plays HLS natively anyway.
-- GSAP (69 KB) is used for a few tweens and could stay or go.
-- The p5 console error (`Error parsing code: SyntaxError`) and its per-frame argument validation went away with it.
-- Set up route- or layer-level code splitting (for example, LandingOverlay is not needed on deep links). The 6 unused deps were removed in K, but they were never bundled, so the bundle didn't shrink.
-- **Target:** under 250 KB gzip, down from 587. Now 273 KB gzip / 230 KB brotli; lazy-loading hls.js would take it well under.
+**Result:** the JS every page loads went from **474 KB to 101 KB brotli** (1,908 → 368 KB raw), against a target of under 250 KB.
+
+**Done:**
+- **p5 (about 1 MB):** removed in area C together with the logo animation. Its console error and per-frame argument validation went with it.
+- **hls.js (510 KB raw / 130 KB brotli):** now loaded through [loadHls.js](src/utils/loadHls.js) the first time an `.m3u8` video mounts. Only Smokeye Hill uses it today. If the chunk fails to load, playback falls back to native HLS or the Vimeo iframe, the same path a fatal hls.js error takes.
+- **Unused packages:** the 6 never-imported dependencies were removed in K. They were never bundled, so this didn't shrink anything.
+
+**Left (small):**
+- **GSAP (~69 KB raw):** used by LandingOverlay and CyclingText; could go with a landing refactor (H).
+- **Splitting the landing overlay:** it isn't needed on deep links and could be a lazy chunk (H/D).
+- **Bundled content:** `navigation.js` (~21 KB) ships inside the bundle; that's an area F decision.
 
 ### C. Runtime / render-loop performance ✅ *done 2026-10-11*
 **Where:** [P5Menu_canvas.jsx](src/components/P5Menu_canvas.jsx), [ContentArea.jsx](src/components/ContentArea.jsx), [CustomCursor.jsx](src/components/CustomCursor.jsx), [LandingOverlay.jsx](src/components/LandingOverlay.jsx), [navigationStore.js](src/store/navigationStore.js), [HomeTextOverlay.jsx](src/components/HomeTextOverlay.jsx)
@@ -263,7 +268,7 @@ The areas are ordered by expected impact. Each one is meant to be a self-contain
 1. ~~**K (cleanup)**~~ ✅
 2. ~~**Baseline**~~ ✅ [perf/BASELINE.md](perf/BASELINE.md). Weight and render cost are recorded; Lighthouse is pending.
 3. ~~**C (render loops)**~~ ✅
-4. **B (bundle):** p5 is gone (C). What's left is lazy-loading hls.js.
+4. ~~**B (bundle)**~~ ✅
 5. **A (media):** the biggest payoff, but it needs an encoding and asset workflow decision.
 6. **E (fonts)**, then **D (first load)**.
 7. **F, G, H, I, J:** structural and quality work, in whatever order matches priorities.
