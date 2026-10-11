@@ -50,10 +50,8 @@ const isInteractiveTarget = (target) =>
   target.tagName === 'A' ||
   target.tagName === 'INPUT' ||
   !!target.closest?.('button, a') ||
-  !!target.classList?.contains('bezier-slider') ||
   target.style?.cursor === 'pointer' ||
-  target.style?.cursor === 'grab' ||
-  (target.tagName === 'rect' && target.classList.contains('rectangle-stroke'));
+  target.style?.cursor === 'grab';
 
 // Position, rotation and radius change every frame, so they're written
 // straight to the DOM; React only re-renders when visibility or hover changes.

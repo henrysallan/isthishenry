@@ -1277,7 +1277,7 @@ function P5Menu() {
   // ── Keyboard navigation ──
   // Arrow keys open the box and move a highlight: up/down within a column,
   // right/Enter to open, left to back out, Escape to close. Text fields, the
-  // lightbox, the right-click menu and the landing overlay keep their keys.
+  // lightbox and the right-click menu keep their keys.
   useEffect(() => {
     const stopKeyboard = () => {
       keyboardRef.current.active = false;
@@ -1326,7 +1326,6 @@ function P5Menu() {
       if (e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
       if (document.querySelector('.lightbox-overlay, .context-menu')) return;
       const state = useNavigationStore.getState();
-      if (state.isLandingDismissed !== true) return;
       const kb = keyboardRef.current;
       // Enter and Escape only act once the arrow keys have taken over
       if (!kb.active && !e.key.startsWith('Arrow')) return;

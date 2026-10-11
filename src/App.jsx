@@ -5,7 +5,6 @@ import SiteSearch from './components/SiteSearch';
 import ContentArea from './components/ContentArea';
 import CustomCursor from './components/CustomCursor';
 import ContextMenu from './components/ContextMenu';
-import LandingOverlay from './components/LandingOverlay';
 import { useNavigationStore } from './store/navigationStore';
 import { colorThemes } from './config/theme';
 import './App.css';
@@ -55,7 +54,6 @@ function App() {
       <ContentArea />
       <ContextMenu />
       <CustomCursor />
-      <LandingOverlay />
     </div>
   );
 }

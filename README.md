@@ -1,14 +1,14 @@
 # isthishenry Portfolio
 
 Henry Allan's design portfolio: a single-page React app with a canvas-drawn
-menu, an interactive landing overlay and case-study pages.
+menu, case-study pages and a site search with AI answers.
 
 ## Tech Stack
 
 - **React 19** + **Vite 7** - UI framework and build tool
 - **Zustand** - navigation state, synced with the URL
-- **Canvas 2D / SVG** - menu, landing overlay and cursor are drawn by hand
-- **GSAP** - landing and text transitions
+- **Canvas 2D / SVG** - menu and cursor are drawn by hand
+- **GSAP** - text transitions
 - **hls.js** - Vimeo HLS playback
 - **Vitest** + **ESLint** - tests and linting
 - **Vercel** - hosting
@@ -102,7 +102,7 @@ Cloudflare R2 is configured for video streaming. You'll need to:
 ```
 ├── src/
 │   ├── App.jsx              # Composes the screen layers, applies theme CSS vars
-│   ├── components/          # Menu canvas, content area, landing overlay, logo, cursor, players
+│   ├── components/          # Menu canvas, content area, site search, cursor, players
 │   ├── data/navigation.js   # All site content and structure (pages, case studies, media URLs)
 │   ├── store/               # Zustand navigation store (+ tests)
 │   ├── utils/               # URL sync (+ tests), asset preloader, R2 helpers

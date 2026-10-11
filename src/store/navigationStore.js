@@ -14,20 +14,16 @@ export const useNavigationStore = create((set, get) => ({
   isHoveringMenuItem: false, // Track if hovering over any menu item
   currentTheme: 'classic', // Active color theme
   isThemeInverted: false, // Always light mode
-  isLandingDismissed: false, // Track if landing page has been dismissed
   
   // Internal flag: when true, the URL subscriber skips pushing
   _skipUrlPush: false,
 
-  // Landing page actions
-  setLandingDismissed: (isDismissed) => set({ isLandingDismissed: isDismissed }),
-  
   // Initialise navigation state from the current URL (called once on mount).
-  // Returns true if a deep link was resolved (so the caller can skip the landing overlay).
+  // Returns true if a deep link was resolved.
   initFromUrl: () => {
     const navState = resolveUrlToState(window.location.pathname);
     if (navState) {
-      set({ ...navState, _skipUrlPush: true, isLandingDismissed: true });
+      set({ ...navState, _skipUrlPush: true });
       // Replace (don't push) so we don't double the history entry
       replaceUrl(navState.currentView);
       // Reset the flag after the synchronous subscriber fires
@@ -257,6 +253,6 @@ useNavigationStore.subscribe((state) => {
 });
 
 // ── Resolve deep-link BEFORE first React render ──
-// This must run at module level so isLandingDismissed is already true
-// when LandingOverlay mounts.
+// At module level so the first render already shows the linked page rather
+// than flashing home.
 useNavigationStore.getState().initFromUrl();

@@ -93,12 +93,11 @@ describe('goBack', () => {
 });
 
 describe('URL sync', () => {
-  it('initFromUrl resolves a deep link and skips the landing overlay', () => {
+  it('initFromUrl resolves a deep link', () => {
     window.history.replaceState(null, '', `/${submenu.id}/${subpage.id}/`);
-    useNavigationStore.setState({ isLandingDismissed: false });
 
     expect(store().initFromUrl()).toBe(true);
-    expect(store()).toMatchObject({ currentView: subpage.id, expandedSubmenuId: submenu.id, isLandingDismissed: true });
+    expect(store()).toMatchObject({ currentView: subpage.id, expandedSubmenuId: submenu.id });
     expect(path()).toBe(`/${submenu.id}/${subpage.id}`); // normalised via replaceState
   });
 
