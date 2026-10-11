@@ -1,0 +1,17 @@
+{
+  "label": "baseline",
+  "date": "2026-10-11",
+  "tool": "perf/react-probe.js, run in the Claude desktop in-app browser (hidden pane, 1024x768 @2x)",
+  "note": "Per-frame figures are stable; per-second figures depend on the pane's refresh rate (60-120 Hz while hidden). Component names from the dev server; production commit/loop counts measured on the production build (perf/serve.mjs). No mouse input during any measurement.",
+  "production": [
+    { "scenario": "landing (/)", "commitsPerFrame": 2, "rafLoops": 5, "rafMsPerFrame": 0.38, "componentRendersPerFrame": 4.1, "longTasks": 0 },
+    { "scenario": "home (/, landing dismissed)", "commitsPerFrame": 2, "rafLoops": 5, "rafMsPerFrame": 0.38, "componentRendersPerFrame": 4.0, "longTasks": 0 },
+    { "scenario": "work list (/work)", "commitsPerFrame": 2, "rafLoops": 4, "rafMsPerFrame": 0.38, "componentRendersPerFrame": 4.0, "longTasks": 0 },
+    { "scenario": "case study (/work/expensify)", "commitsPerFrame": 2, "rafLoops": 4, "rafMsPerFrame": 0.36, "componentRendersPerFrame": 16.0, "longTasks": 0 }
+  ],
+  "devRendersPerFrame": {
+    "landing (/)": { "ContentArea": 2, "VideoPlayer": 2, "LoadingSpinner": 2, "CustomCursor": 1, "LandingOverlay": 0.14 },
+    "work list (/work)": { "ContentArea": 2, "WorkList": 2, "CustomCursor": 1 },
+    "case study (/work/expensify)": { "ContentArea": 2.01, "LazyVideo": 10.04, "ProgressiveImage": 8.03, "CustomCursor": 1 }
+  }
+}

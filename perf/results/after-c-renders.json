@@ -1,0 +1,12 @@
+{
+  "label": "after-c",
+  "date": "2026-10-11",
+  "tool": "perf/react-probe.js, run in the Claude desktop in-app browser (hidden pane, 1024x768 @2x), production build via perf/serve.mjs",
+  "note": "Pointer parked in the page corner, so the custom cursor is visible and its loop runs (it now only runs while visible). Baseline had no pointer in the page, but the old cursor loop ran regardless of visibility.",
+  "production": [
+    { "scenario": "landing (/)", "commitsPerFrame": 0, "rafLoops": 3, "rafMsPerFrame": 0.166, "componentRendersPerFrame": 0, "longTasks": 0, "loops": "landing drift + landing main + cursor" },
+    { "scenario": "home (/, landing dismissed)", "commitsPerFrame": 0, "rafLoops": 1, "rafMsPerFrame": 0.022, "componentRendersPerFrame": 0, "longTasks": 0, "loops": "cursor" },
+    { "scenario": "work list (/work)", "commitsPerFrame": 0, "rafLoops": 1, "rafMsPerFrame": 0.024, "componentRendersPerFrame": 0, "longTasks": 0, "loops": "cursor" },
+    { "scenario": "case study (/work/expensify)", "commitsPerFrame": 0, "rafLoops": 1, "rafMsPerFrame": 0.026, "componentRendersPerFrame": 0, "longTasks": 0, "loops": "cursor" }
+  ]
+}
