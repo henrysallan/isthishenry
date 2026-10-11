@@ -29,7 +29,7 @@
   z-index: 9998;
   overflow: hidden;
   border-radius: 4px;
-  background: #ececec;
+  background: #e9e6e6;
   /* Matches the menu items drawn on the canvas (20px, 16px on phones) */
   --nav-name-size: 20px;
 }
