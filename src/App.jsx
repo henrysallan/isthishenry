@@ -5,9 +5,7 @@ import CustomCursor from './components/CustomCursor';
 import LandingOverlay from './components/LandingOverlay';
 import ReturnArrow from './components/ReturnArrow';
 import HomeTextOverlay from './components/HomeTextOverlay';
-import ColorPicker from './components/ColorPicker';
 import LoadingScreen from './components/LoadingScreen';
-// import WebcamSphere from './components/WebcamSphere';
 import { useNavigationStore } from './store/navigationStore';
 import { colorThemes } from './config/theme';
 import { preloadAllAssets } from './utils/preloader';
@@ -31,9 +29,7 @@ function App() {
   // Start preloading assets immediately on mount
   useEffect(() => {
     const timer = setTimeout(() => {
-      preloadAllAssets((progress) => {
-        console.log(`[Preloader] ${Math.round(progress * 100)}% loaded`);
-      });
+      preloadAllAssets();
     }, 100);
     
     return () => clearTimeout(timer);
@@ -73,8 +69,6 @@ function App() {
       <ContentArea />
       <HomeTextOverlay />
       <CustomCursor />
-      {/* <ColorPicker /> */}
-      {/* <WebcamSphere /> */}
       <LandingOverlay />
       <ReturnArrow />
       {isLoading && <LoadingScreen onComplete={handleLoadingComplete} />}

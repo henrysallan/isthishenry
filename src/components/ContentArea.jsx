@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { navigationData } from '../data/navigation';
-import { theme } from '../config/theme';
-import { R2Video, getR2VideoUrl } from '../utils/videoStreaming';
+import { R2Video } from '../utils/videoStreaming';
 import VideoPlayer from './VideoPlayer';
 import LoadingSpinner from './LoadingSpinner';
-import gsap from 'gsap';
 import Hls from 'hls.js';
 import CyclingText from './CyclingText';
 import Lightbox from './Lightbox';
@@ -261,114 +259,11 @@ function ProgressiveImage({ src, alt, className, onClick }) {
   );
 }
 
-// Grid image component with loading state
-function GridImage({ src, alt }) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
-  const fakeProgressRef = useRef(null);
-  const targetFakeProgress = useRef(Math.floor(Math.random() * 16) + 85);
-
-  useEffect(() => {
-    if (!isLoaded && loadProgress < targetFakeProgress.current) {
-      fakeProgressRef.current = setInterval(() => {
-        setLoadProgress(prev => {
-          const increment = Math.random() * 3 + 0.5;
-          const next = prev + increment;
-          if (next >= targetFakeProgress.current) {
-            clearInterval(fakeProgressRef.current);
-            return targetFakeProgress.current;
-          }
-          return next;
-        });
-      }, 100);
-    }
-    return () => {
-      if (fakeProgressRef.current) clearInterval(fakeProgressRef.current);
-    };
-  }, [isLoaded]);
-
-  const handleLoad = () => {
-    setLoadProgress(100);
-    if (fakeProgressRef.current) clearInterval(fakeProgressRef.current);
-    setIsLoaded(true);
-  };
-
-  return (
-    <div className="grid-media-wrapper">
-      {!isLoaded && (
-        <div className="grid-loading-placeholder">
-          <span className="loading-number">{Math.floor(loadProgress)}</span>
-        </div>
-      )}
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        onLoad={handleLoad}
-        style={{ opacity: isLoaded ? 1 : 0 }}
-      />
-    </div>
-  );
-}
-
-// Grid video component with loading state
-function GridVideo({ src }) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [loadProgress, setLoadProgress] = useState(0);
-  const fakeProgressRef = useRef(null);
-  const targetFakeProgress = useRef(Math.floor(Math.random() * 16) + 85);
-
-  useEffect(() => {
-    if (!isLoaded && loadProgress < targetFakeProgress.current) {
-      fakeProgressRef.current = setInterval(() => {
-        setLoadProgress(prev => {
-          const increment = Math.random() * 3 + 0.5;
-          const next = prev + increment;
-          if (next >= targetFakeProgress.current) {
-            clearInterval(fakeProgressRef.current);
-            return targetFakeProgress.current;
-          }
-          return next;
-        });
-      }, 100);
-    }
-    return () => {
-      if (fakeProgressRef.current) clearInterval(fakeProgressRef.current);
-    };
-  }, [isLoaded]);
-
-  const handleLoad = () => {
-    setLoadProgress(100);
-    if (fakeProgressRef.current) clearInterval(fakeProgressRef.current);
-    setIsLoaded(true);
-  };
-
-  return (
-    <div className="grid-media-wrapper">
-      {!isLoaded && (
-        <div className="grid-loading-placeholder">
-          <span className="loading-number">{Math.floor(loadProgress)}</span>
-        </div>
-      )}
-      <video
-        src={src}
-        muted
-        loop
-        playsInline
-        autoPlay
-        onLoadedData={handleLoad}
-        style={{ opacity: isLoaded ? 1 : 0 }}
-      />
-    </div>
-  );
-}
-
 // Lazy loading video component - only plays when in viewport
 // Includes retry logic for failed Cloudflare R2 requests
 function LazyVideo({ src, poster, aspectRatio }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-  const [isInView, setIsInView] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -442,7 +337,6 @@ function LazyVideo({ src, poster, aspectRatio }) {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            setIsInView(true);
             video.play().catch(() => {});
           } else {
             video.pause();
@@ -584,10 +478,13 @@ function WorkList({ items, onItemClick }) {
 }
 
 function ContentArea() {
-  const { currentView, navigateToSubpage, navigateToNestedSubmenu } = useNavigationStore();
+  // Select fields individually: subscribing to the whole store re-rendered
+  // the entire page on every hover-flag write.
+  const currentView = useNavigationStore(state => state.currentView);
+  const navigateToSubpage = useNavigationStore(state => state.navigateToSubpage);
+  const navigateToNestedSubmenu = useNavigationStore(state => state.navigateToNestedSubmenu);
   const [content, setContent] = useState(null);
   const [parentSubmenu, setParentSubmenu] = useState(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [lightboxItems, setLightboxItems] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const contentAreaRef = useRef(null);
@@ -627,8 +524,6 @@ function ContentArea() {
 
     // If we're changing views, animate the transition
     if (previousViewRef.current !== currentView && content && contentInnerRef.current) {
-      setIsTransitioning(true);
-      
       // Reset scroll position on the scrollable container
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
@@ -642,7 +537,6 @@ function ContentArea() {
       previousContentRef.current = content;
       setContent(newContent);
       setParentSubmenu(submenuItems ? { items: submenuItems, parentId } : null);
-      setIsTransitioning(false);
     } else {
       setContent(newContent);
       setParentSubmenu(submenuItems ? { items: submenuItems, parentId } : null);
@@ -653,12 +547,6 @@ function ContentArea() {
 
   const handleGridItemClick = (itemId, parentId, parentView = null) => {
     navigateToSubpage(itemId, parentId, parentView);
-  };
-
-  const getVideoSrc = (item) => {
-    if (item.content?.videoUrl) return item.content.videoUrl;
-    if (item.content?.videoKey) return getR2VideoUrl(item.content.videoKey);
-    return null;
   };
 
   const renderContent = (contentData, view) => {
@@ -682,7 +570,7 @@ function ContentArea() {
     if (contentData.isProjectsPage && contentData.projects) {
       const projectMedia = contentData.projects
         .filter(p => p.image || p.video)
-        .map((p, idx) => {
+        .map((p) => {
           if (p.video) return { src: p.video, type: 'video', alt: p.title };
           return { src: p.image, type: 'image', alt: p.title };
         });

@@ -192,11 +192,3 @@ export function replaceUrl(currentView) {
     window.history.replaceState({ currentView }, '', path);
   }
 }
-
-/**
- * Returns true if the current URL is a deep link (not home).
- */
-export function isDeepLink() {
-  const path = window.location.pathname.replace(/\/+$/, '') || '/';
-  return path !== '/';
-}

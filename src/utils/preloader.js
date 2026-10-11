@@ -2,7 +2,7 @@
 import { navigationData } from '../data/navigation';
 
 // Extract all asset URLs from navigation data
-function getAllAssetUrls() {
+export function getAllAssetUrls() {
   const urls = {
     videos: new Set(),
     images: new Set()
@@ -228,56 +228,4 @@ export async function preloadAllAssets(onProgress) {
 
   console.log('[Preloader] All assets preloaded');
   return { totalAssets, loadedCount };
-}
-
-// Lightweight version - just preload thumbnails for the work grid
-export async function preloadGridThumbnails() {
-  const workMenu = navigationData.mainMenu.find(item => item.id === 'work');
-  if (!workMenu?.submenu) return;
-
-  const thumbnails = workMenu.submenu
-    .slice(0, 9)
-    .map(item => {
-      const content = item.content;
-      return content?.thumbnail || content?.videoUrl;
-    })
-    .filter(Boolean);
-
-  console.log('[Preloader] Preloading grid thumbnails:', thumbnails.length);
-
-  await Promise.all(
-    thumbnails.map(url => 
-      isVideo(url) ? preloadVideo(url, 'high') : preloadImage(url)
-    )
-  );
-
-  console.log('[Preloader] Grid thumbnails loaded');
-}
-
-// Export URL getter for use in preload hints
-export function getCriticalAssetUrls() {
-  const urls = [];
-  
-  // Home reel
-  urls.push({
-    url: 'https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4',
-    type: 'video'
-  });
-
-  // Work grid thumbnails
-  const workMenu = navigationData.mainMenu.find(item => item.id === 'work');
-  if (workMenu?.submenu) {
-    workMenu.submenu.slice(0, 9).forEach(item => {
-      const content = item.content;
-      const thumbnail = content?.thumbnail || content?.videoUrl;
-      if (thumbnail) {
-        urls.push({
-          url: thumbnail,
-          type: isVideo(thumbnail) ? 'video' : 'image'
-        });
-      }
-    });
-  }
-
-  return urls;
 }

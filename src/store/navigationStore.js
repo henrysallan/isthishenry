@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { resolveUrlToState, pushUrl, replaceUrl, isDeepLink } from '../utils/urlSync';
+import { resolveUrlToState, pushUrl, replaceUrl } from '../utils/urlSync';
 
 // Always use light mode (classic theme)
 
@@ -12,7 +12,6 @@ export const useNavigationStore = create((set, get) => ({
   expandedNestedSubmenuId: null, // ID of nested submenu (e.g. "More" inside Work)
   parentView: null, // For nested grids: the intermediate page to return to on go-back
   isHoveringMenuItem: false, // Track if hovering over any menu item
-  isHoveringLogo: false, // Track if hovering over logo letters
   currentTheme: 'classic', // Active color theme
   isThemeInverted: false, // Always light mode
   isLandingDismissed: false, // Track if landing page has been dismissed
@@ -23,9 +22,6 @@ export const useNavigationStore = create((set, get) => ({
   // Landing page actions
   setLandingDismissed: (isDismissed) => set({ isLandingDismissed: isDismissed }),
   
-  // Set logo hover state
-  setIsHoveringLogo: (isHovering) => set({ isHoveringLogo: isHovering }),
-
   // Initialise navigation state from the current URL (called once on mount).
   // Returns true if a deep link was resolved (so the caller can skip the landing overlay).
   initFromUrl: () => {
@@ -43,7 +39,7 @@ export const useNavigationStore = create((set, get) => ({
 
   // Listen for browser back / forward and update store accordingly
   setupPopstateListener: () => {
-    const handler = (event) => {
+    const handler = () => {
       const navState = resolveUrlToState(window.location.pathname);
       // Use _skipUrlPush so the subscriber doesn't push the URL back
       set({
@@ -213,9 +209,11 @@ export const useNavigationStore = create((set, get) => ({
     return state.currentView !== 'home' || state.expandedSubmenuId !== null;
   },
   
-  setHoveringMenuItem: (isHovering) => set({
-    isHoveringMenuItem: isHovering
-  }),
+  // Called every frame by the menu canvas; returning the same state object
+  // means subscribers are only notified when the value actually changes.
+  setHoveringMenuItem: (isHovering) => set((state) =>
+    state.isHoveringMenuItem === isHovering ? state : { isHoveringMenuItem: isHovering }
+  ),
   
   setTheme: (themeName) => set((state) => {
     // If clicking the same theme, toggle inversion

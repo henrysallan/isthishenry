@@ -5,7 +5,7 @@ import { R2_PUBLIC_URL } from '../config/r2';
  * @param {string} videoKey - The key/path of the video in R2 bucket
  * @returns {string} The public URL to stream the video
  */
-export const getR2VideoUrl = (videoKey) => {
+const getR2VideoUrl = (videoKey) => {
   return `${R2_PUBLIC_URL}/${videoKey}`;
 };
 

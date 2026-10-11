@@ -4,16 +4,31 @@ import { useNavigationStore } from '../store/navigationStore';
 import { colorThemes, theme } from '../config/theme';
 import './P5Menu.css';
 
-// ── Pure-math helpers (replace p5.bezierPoint / p5.bezierTangent) ──
+// ── Pure-math helpers (replace p5.bezierPoint) ──
 function bezierPoint(a, b, c, d, t) {
   const t1 = 1 - t;
   return t1 * t1 * t1 * a + 3 * t1 * t1 * t * b + 3 * t1 * t * t * c + t * t * t * d;
 }
 
-function bezierTangent(a, b, c, d, t) {
-  const t1 = 1 - t;
-  return 3 * t1 * t1 * (b - a) + 6 * t1 * t * (c - b) + 3 * t * t * (d - c);
+// Menu titles are measured many times per frame with the same font, so cache
+// the widths. Cleared once the menu font finishes loading.
+const textWidthCache = new Map();
+function textWidth(ctx, text) {
+  const key = `${ctx.font}|${text}`;
+  let w = textWidthCache.get(key);
+  if (w === undefined) {
+    w = ctx.measureText(text).width;
+    textWidthCache.set(key, w);
+  }
+  return w;
 }
+
+// Stop drawing once this much time AND this many frames have passed without
+// input or navigation. Every animation here is started by one of those; the
+// timed ones finish within ~1s and the per-frame eases within ~150 frames.
+// Counting frames too keeps a throttled tab from stopping mid-animation.
+const IDLE_MS = 3000;
+const IDLE_FRAMES = 240;
 
 function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -42,6 +57,8 @@ function P5Menu() {
   const rafRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
   const startTimeRef = useRef(performance.now());
+  const lastActivityRef = useRef(performance.now());
+  const framesSinceActivityRef = useRef(0);
 
   // ── Animation state (persistent across frames) ──
   const animRef = useRef({
@@ -173,9 +190,11 @@ function P5Menu() {
     const fontFace = new FontFace('InterBold', 'url(/font/Inter_Bold.ttf)');
     fontFace.load().then((loaded) => {
       document.fonts.add(loaded);
+      textWidthCache.clear();
       anim.fontReady = true;
     }).catch(() => {
       // Fallback to CSS Inter
+      textWidthCache.clear();
       anim.fontReady = true;
     });
 
@@ -249,6 +268,15 @@ function P5Menu() {
     canvas.addEventListener('touchend', onTouchEnd);
     canvas._onTouchEnd = onTouchEnd;
 
+    // Same when the mouse leaves, so hover state and the dot field don't stay
+    // stuck at the point where the pointer exited
+    const onMouseLeave = () => {
+      mouseRef.current.x = -9999;
+      mouseRef.current.y = -9999;
+    };
+    canvas.addEventListener('mouseleave', onMouseLeave);
+    canvas._onMouseLeave = onMouseLeave;
+
     // Resize
     const onResize = () => {
       canvas._sizeCanvas();
@@ -304,7 +332,7 @@ function P5Menu() {
       if (i >= anim.nestedItems.length) break;
       const item = anim.nestedItems[i];
       if (item.opacity > 0.1) {
-        const tw = ctx.measureText(nestedData[i].title).width;
+        const tw = textWidth(ctx, nestedData[i].title);
         if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
           const nestedItem = nestedData[i];
           state.navigateToSubpage(nestedItem.id, state.expandedSubmenuId, state.expandedNestedSubmenuId);
@@ -316,7 +344,7 @@ function P5Menu() {
     // Main menu items
     for (let i = 0; i < mainMenu.length; i++) {
       const item = anim.mainItems[i];
-      const tw = ctx.measureText(mainMenu[i].title).width;
+      const tw = textWidth(ctx, mainMenu[i].title);
       if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
         const menuItem = mainMenu[i];
         if (menuItem.type === 'submenu') {
@@ -340,7 +368,7 @@ function P5Menu() {
       if (i >= anim.subItems.length) break;
       const item = anim.subItems[i];
       if (item.opacity > 0.1) {
-        const tw = ctx.measureText(submenuData[i].title).width;
+        const tw = textWidth(ctx, submenuData[i].title);
         if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
           const subItem = submenuData[i];
           if (subItem.type === 'page') {
@@ -360,12 +388,14 @@ function P5Menu() {
     const r = isMobile() ? 1.2 : 1.0;
     const half = r / 2;
     ctx.fillStyle = dotColor;
+    // Single path for all dots: one fill call instead of one per dot
+    ctx.beginPath();
     for (let i = 0; i < anim.dotPositions.length; i++) {
       const dot = anim.dotPositions[i];
-      ctx.beginPath();
+      ctx.moveTo(dot.x + half, dot.y);
       ctx.arc(dot.x, dot.y, half, 0, Math.PI * 2);
-      ctx.fill();
     }
+    ctx.fill();
   }, []);
 
   const updateDots = useCallback(() => {
@@ -453,6 +483,8 @@ function P5Menu() {
     const ctx = ctxRef.current;
     const anim = animRef.current;
     if (!canvas || !ctx || !anim.fontReady) {
+      lastActivityRef.current = performance.now(); // don't go idle before the first real frame
+      framesSinceActivityRef.current = 0;
       rafRef.current = requestAnimationFrame(draw);
       return;
     }
@@ -514,7 +546,7 @@ function P5Menu() {
       const nestedX = submenuX + nestedOffset;
       let maxNestedTextW = 0;
       for (let i = 0; i < nestedData.length; i++) {
-        maxNestedTextW = Math.max(maxNestedTextW, ctx.measureText(nestedData[i].title).width);
+        maxNestedTextW = Math.max(maxNestedTextW, textWidth(ctx, nestedData[i].title));
       }
       const rightEdge = nestedX + maxNestedTextW + 10;
       const leftEdge = submenuX - 20;
@@ -530,7 +562,7 @@ function P5Menu() {
       const ep = mainMenu.find(m => m.id === expandedSubmenuId);
       if (ep && ep.submenu) {
         for (let i = 0; i < ep.submenu.length; i++) {
-          avgTextW += ctx.measureText(ep.submenu[i].title).width;
+          avgTextW += textWidth(ctx, ep.submenu[i].title);
         }
         avgTextW /= ep.submenu.length;
       }
@@ -552,7 +584,7 @@ function P5Menu() {
       anim.mainItems[i].targetY = pos.y;
 
       const isActive = activeMenuItem === mainMenu[i].id || expandedSubmenuId === mainMenu[i].id;
-      const tw = ctx.measureText(mainMenu[i].title).width;
+      const tw = textWidth(ctx, mainMenu[i].title);
       const isHov = isPointInRect(
         mouse.x - anim.cameraX, mouse.y,
         anim.mainItems[i].x - 5, anim.mainItems[i].y,
@@ -601,7 +633,7 @@ function P5Menu() {
 
       if (expandedSubmenuId) {
         const isActive = activeMenuItem === submenuData[i].id;
-        const tw = ctx.measureText(submenuData[i].title).width;
+        const tw = textWidth(ctx, submenuData[i].title);
         const isHov = isPointInRect(
           mouse.x - anim.cameraX, mouse.y,
           anim.subItems[i].x - 5, anim.subItems[i].y,
@@ -650,7 +682,7 @@ function P5Menu() {
       const closingParentIdx = mainMenu.findIndex(m => m.id === closingParentId);
       if (closingParentIdx !== -1 && anim.subItems.length > 0) {
         const pi = anim.mainItems[closingParentIdx];
-        const ptw = ctx.measureText(mainMenu[closingParentIdx].title).width;
+        const ptw = textWidth(ctx, mainMenu[closingParentIdx].title);
         const scy = (anim.subItems[0].y + anim.subItems[anim.subItems.length - 1].y) / 2;
         const slx = anim.subItems[0].x - 10;
         anim.submenuWireEndpoints = { x1: pi.x + ptw + 8, y1: pi.y, x2: slx, y2: scy };
@@ -685,7 +717,7 @@ function P5Menu() {
         const parentIdx = mainMenu.findIndex(m => m.id === expandedSubmenuId);
         if (parentIdx !== -1 && anim.subItems.length > 0) {
           const parentItem = anim.mainItems[parentIdx];
-          wireX1 = parentItem.x + ctx.measureText(mainMenu[parentIdx].title).width + 8;
+          wireX1 = parentItem.x + textWidth(ctx, mainMenu[parentIdx].title) + 8;
           wireY1 = parentItem.y;
           wireY2 = (anim.subItems[0].y + anim.subItems[anim.subItems.length - 1].y) / 2;
           wireX2 = anim.subItems[0].x - 10;
@@ -730,7 +762,7 @@ function P5Menu() {
 
       if (expandedNestedSubmenuId) {
         const isActive = activeMenuItem === nestedData[i].id || currentView === nestedData[i].id;
-        const tw = ctx.measureText(nestedData[i].title).width;
+        const tw = textWidth(ctx, nestedData[i].title);
         const isHov = isPointInRect(
           mouse.x - anim.cameraX, mouse.y,
           anim.nestedItems[i].x - 5, anim.nestedItems[i].y,
@@ -780,7 +812,7 @@ function P5Menu() {
       const closingNestedIdx = submenuData.findIndex(s => s.id === closingNestedId);
       if (closingNestedIdx !== -1 && anim.subItems[closingNestedIdx] && anim.nestedItems.length > 0) {
         const pi = anim.subItems[closingNestedIdx];
-        const ptw = ctx.measureText(submenuData[closingNestedIdx].title).width;
+        const ptw = textWidth(ctx, submenuData[closingNestedIdx].title);
         const ncy = (anim.nestedItems[0].y + anim.nestedItems[anim.nestedItems.length - 1].y) / 2;
         const nlx = anim.nestedItems[0].x - 10;
         anim.nestedWireEndpoints = {
@@ -818,7 +850,7 @@ function P5Menu() {
         const parentIdx = submenuData.findIndex(s => s.id === expandedNestedSubmenuId);
         if (parentIdx !== -1 && anim.subItems[parentIdx] && anim.nestedItems.length > 0) {
           const parentItem = anim.subItems[parentIdx];
-          nwX1 = parentItem.x + ctx.measureText(submenuData[parentIdx].title).width + 8;
+          nwX1 = parentItem.x + textWidth(ctx, submenuData[parentIdx].title) + 8;
           nwY1 = parentItem.y;
           const firstY = anim.nestedItems[0].y;
           const lastY = anim.nestedItems[anim.nestedItems.length - 1].y;
@@ -855,20 +887,20 @@ function P5Menu() {
         if (mi !== -1) {
           ix = anim.mainItems[mi].x;
           iy = anim.mainItems[mi].y;
-          itw = ctx.measureText(mainMenu[mi].title).width;
+          itw = textWidth(ctx, mainMenu[mi].title);
         } else if (expandedParent) {
           const si = submenuData.findIndex(s => s.id === anim.pageWireItem);
           if (si !== -1 && anim.subItems[si]) {
             ix = anim.subItems[si].x;
             iy = anim.subItems[si].y;
-            itw = ctx.measureText(submenuData[si].title).width;
+            itw = textWidth(ctx, submenuData[si].title);
           } else if (nestedParent || anim.prevExpandedNestedId) {
             const nestedSrc = nestedParent?.submenu || (anim.prevExpandedNestedId ? submenuData.find(s => s.id === anim.prevExpandedNestedId)?.submenu : null) || [];
             const ni = nestedSrc.findIndex(n => n.id === anim.pageWireItem);
             if (ni !== -1 && anim.nestedItems[ni]) {
               ix = anim.nestedItems[ni].x;
               iy = anim.nestedItems[ni].y;
-              itw = ctx.measureText(nestedSrc[ni].title).width;
+              itw = textWidth(ctx, nestedSrc[ni].title);
             }
           }
         }
@@ -908,17 +940,17 @@ function P5Menu() {
       } else if (anim.pageWireItem) {
         const mi = mainMenu.findIndex(m => m.id === anim.pageWireItem);
         if (mi !== -1) {
-          pwX1 = anim.mainItems[mi].x + ctx.measureText(mainMenu[mi].title).width + 8;
+          pwX1 = anim.mainItems[mi].x + textWidth(ctx, mainMenu[mi].title) + 8;
           pwY1 = anim.mainItems[mi].y;
         } else if (expandedParent) {
           const si = submenuData.findIndex(s => s.id === anim.pageWireItem);
           if (si !== -1 && anim.subItems[si]) {
-            pwX1 = anim.subItems[si].x + ctx.measureText(submenuData[si].title).width + 8;
+            pwX1 = anim.subItems[si].x + textWidth(ctx, submenuData[si].title) + 8;
             pwY1 = anim.subItems[si].y;
           } else if (nestedData.length > 0) {
             const ni = nestedData.findIndex(n => n.id === anim.pageWireItem);
             if (ni !== -1 && anim.nestedItems[ni]) {
-              pwX1 = anim.nestedItems[ni].x + ctx.measureText(nestedData[ni].title).width + 8;
+              pwX1 = anim.nestedItems[ni].x + textWidth(ctx, nestedData[ni].title) + 8;
               pwY1 = anim.nestedItems[ni].y;
             }
           }
@@ -1004,7 +1036,7 @@ function P5Menu() {
 
     for (let i = 0; i < mainMenu.length; i++) {
       const item = anim.mainItems[i];
-      const tw = ctx.measureText(mainMenu[i].title).width;
+      const tw = textWidth(ctx, mainMenu[i].title);
       if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
         isHovering = true;
       }
@@ -1013,7 +1045,7 @@ function P5Menu() {
       if (i >= anim.subItems.length) break;
       const item = anim.subItems[i];
       if (item.opacity > 0.1) {
-        const tw = ctx.measureText(submenuData[i].title).width;
+        const tw = textWidth(ctx, submenuData[i].title);
         if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
           isHovering = true;
         }
@@ -1024,7 +1056,7 @@ function P5Menu() {
       if (i >= anim.nestedItems.length) break;
       const item = anim.nestedItems[i];
       if (item.opacity > 0.1) {
-        const tw = ctx.measureText(nestedData[i].title).width;
+        const tw = textWidth(ctx, nestedData[i].title);
         if (isPointInRect(mx, my, item.x - 5, item.y, tw + 10, hitHeight)) {
           isHovering = true;
         }
@@ -1038,7 +1070,12 @@ function P5Menu() {
     }
     useNavigationStore.getState().setHoveringMenuItem(isHovering);
 
-    // ── Next frame ──
+    // ── Next frame (or go idle until woken by input/navigation) ──
+    framesSinceActivityRef.current++;
+    if (framesSinceActivityRef.current > IDLE_FRAMES && performance.now() - lastActivityRef.current > IDLE_MS) {
+      rafRef.current = null;
+      return;
+    }
     rafRef.current = requestAnimationFrame(draw);
   }, [getMenuX, getMenuPositionPx, updateDots, drawDots, drawBezierWire, drawBackButton]);
 
@@ -1049,15 +1086,30 @@ function P5Menu() {
     // Start drawing
     rafRef.current = requestAnimationFrame(draw);
 
+    // Restart the loop after it has gone idle
+    const wake = () => {
+      lastActivityRef.current = performance.now();
+      framesSinceActivityRef.current = 0;
+      if (rafRef.current === null) rafRef.current = requestAnimationFrame(draw);
+    };
+    const wakeEvents = ['mousemove', 'mouseleave', 'mousedown', 'touchstart', 'touchmove', 'touchend'];
+    wakeEvents.forEach(ev => canvasRef.current?.addEventListener(ev, wake, { passive: true }));
+    window.addEventListener('resize', wake);
+    const unsubscribe = useNavigationStore.subscribe(wake);
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      unsubscribe();
+      window.removeEventListener('resize', wake);
       const canvas = canvasRef.current;
       if (canvas) {
+        wakeEvents.forEach(ev => canvas.removeEventListener(ev, wake));
         if (canvas._onMouseMove) canvas.removeEventListener('mousemove', canvas._onMouseMove);
         if (canvas._onMouseDown) canvas.removeEventListener('mousedown', canvas._onMouseDown);
         if (canvas._onTouchStart) canvas.removeEventListener('touchstart', canvas._onTouchStart);
         if (canvas._onTouchMove) canvas.removeEventListener('touchmove', canvas._onTouchMove);
         if (canvas._onTouchEnd) canvas.removeEventListener('touchend', canvas._onTouchEnd);
+        if (canvas._onMouseLeave) canvas.removeEventListener('mouseleave', canvas._onMouseLeave);
         if (canvas._onResize) window.removeEventListener('resize', canvas._onResize);
         canvas.remove();
       }

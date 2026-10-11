@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigationStore } from '../store/navigationStore';
-import { colorThemes } from '../config/theme';
+import { useEffect, useRef, useCallback } from 'react';
 import Hls from 'hls.js';
 import './Lightbox.css';
 
@@ -60,9 +58,6 @@ function LightboxVideo({ src }) {
 }
 
 function Lightbox({ items, activeIndex, onClose, onNavigate }) {
-  const currentTheme = useNavigationStore(state => state.currentTheme);
-  const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
-  const activeColors = colorThemes[currentTheme];
   const strokeColor = '#ffffff';
 
   const hasPrev = activeIndex > 0;

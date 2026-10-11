@@ -332,10 +332,6 @@ function LandingOverlay() {
   const cornerOffset = 5; // Distance from rectangle edge
   const cornerHorizontalLength = 8; // Length of horizontal part
   const cornerVerticalLength = 8; // Length of vertical part
-  
-  // Screen corner bracket dimensions
-  const screenCornerInset = 8; // Distance from screen edge
-  const screenCornerLength = 50; // Length of each arm of the L
 
   // Initialize bezier points on mount and when numBezierPoints changes
   useEffect(() => {
@@ -415,7 +411,8 @@ function LandingOverlay() {
 
   // Noise-based drift animation for bezier points (ref-based, no React state updates)
   useEffect(() => {
-    if (bezierPointsRef.current.length === 0) return;
+    // Not while dismissed: the overlay is invisible. Restarts on 'returning'.
+    if (bezierPointsRef.current.length === 0 || isDismissed === true) return;
     
     const driftSpeed = 0.0002; // Very slow drift
     const driftAmount = 150; // Max pixels to drift
@@ -952,6 +949,8 @@ function LandingOverlay() {
   const mousePosRef = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
   
   useEffect(() => {
+    // While dismissed the overlay is invisible, so only remember the pointer
+    const active = isDismissed !== true;
     const updateCursorLines = (x, y) => {
       // Update cursor-to-text line
       if (cursorToTextLineRef.current) {
@@ -968,16 +967,18 @@ function LandingOverlay() {
       }
     };
     
+    if (active) updateCursorLines(mousePosRef.current.x, mousePosRef.current.y);
+
     const handleMouseMove = (e) => {
       mousePosRef.current = { x: e.clientX, y: e.clientY };
-      updateCursorLines(e.clientX, e.clientY);
+      if (active) updateCursorLines(e.clientX, e.clientY);
     };
     
     const handleTouchMove = (e) => {
       if (e.touches.length > 0) {
         const touch = e.touches[0];
         mousePosRef.current = { x: touch.clientX, y: touch.clientY };
-        updateCursorLines(touch.clientX, touch.clientY);
+        if (active) updateCursorLines(touch.clientX, touch.clientY);
       }
     };
     
@@ -990,7 +991,7 @@ function LandingOverlay() {
       window.removeEventListener('touchmove', handleTouchMove);
       window.removeEventListener('touchstart', handleTouchMove);
     };
-  }, []);
+  }, [isDismissed]);
 
   useEffect(() => {
     // Wait for site to load behind, then draw the rectangle
@@ -1052,7 +1053,8 @@ function LandingOverlay() {
 
   // Handle cursor drift effect
   useEffect(() => {
-    if (!isDrawn) return;
+    // Not while dismissed: the overlay is invisible. Restarts on 'returning'.
+    if (!isDrawn || isDismissed === true) return;
 
     const startTime = Date.now();
     const dampingDuration = 1000; // 100ms damping period
@@ -1073,7 +1075,6 @@ function LandingOverlay() {
     window.addEventListener('touchstart', handleTouchMove, { passive: true });
 
     // Smooth drift animation loop
-    let frameCount = 0;
     const animate = () => {
       if (!rectangleRef.current || !cutoutRef.current) {
         animationFrameRef.current = requestAnimationFrame(animate);
@@ -1086,7 +1087,6 @@ function LandingOverlay() {
         return;
       }
       
-      frameCount++;
 
       // Calculate damping factor for first 100ms
       const elapsed = Date.now() - startTime;
@@ -1644,38 +1644,6 @@ function LandingOverlay() {
             vectorEffect="non-scaling-stroke"
           />
         </g>
-
-        {/* Screen corner brackets - hidden */}
-        {/* <g className="screen-corners" mask="url(#cutoutMask)">
-          <path
-            d={`M ${screenCornerInset} ${screenCornerInset + screenCornerLength} L ${screenCornerInset} ${screenCornerInset} L ${screenCornerInset + screenCornerLength} ${screenCornerInset}`}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            d={`M ${windowSize.width - screenCornerInset - screenCornerLength} ${screenCornerInset} L ${windowSize.width - screenCornerInset} ${screenCornerInset} L ${windowSize.width - screenCornerInset} ${screenCornerInset + screenCornerLength}`}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            d={`M ${windowSize.width - screenCornerInset} ${windowSize.height - screenCornerInset - screenCornerLength} L ${windowSize.width - screenCornerInset} ${windowSize.height - screenCornerInset} L ${windowSize.width - screenCornerInset - screenCornerLength} ${windowSize.height - screenCornerInset}`}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path
-            d={`M ${screenCornerInset + screenCornerLength} ${windowSize.height - screenCornerInset} L ${screenCornerInset} ${windowSize.height - screenCornerInset} L ${screenCornerInset} ${windowSize.height - screenCornerInset - screenCornerLength}`}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-        </g> */}
 
         {/* Interactive Bezier Path System */}
         <g ref={bezierSystemRef} className="bezier-system" mask="url(#bezierMask)">
