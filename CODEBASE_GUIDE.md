@@ -28,7 +28,7 @@ _First mapped 2026-10-10. This is the starting point for optimization work, one 
 | Background preloader | tries to fully download **~928 MB of images**, and starts 9 videos (388 MB) with `preload="auto"`, on every visit |
 | R2 `Cache-Control` | not set on any asset |
 | React commits while idle | **2 per frame** on every page; a case study re-renders ~16 components per frame ([perf/BASELINE.md §2](perf/BASELINE.md)). *0 since C* |
-| Forced wait before the site is usable | a fixed 3.5 s counter, then a click on the landing overlay |
+| Forced wait before the site is usable | a fixed 3.5 s counter, then a click on the landing overlay. *Counter removed (D); the landing click remains for now* |
 
 ---
 
@@ -39,14 +39,13 @@ _First mapped 2026-10-10. This is the starting point for optimization work, one 
 3. Importing [navigationStore.js](src/store/navigationStore.js) runs `initFromUrl()` **at module level** ([navigationStore.js:245](src/store/navigationStore.js:245)). A deep link sets the state and marks the landing overlay as dismissed before the first render.
 4. [App.jsx](src/App.jsx) mounts **every layer at once**, with nothing lazy loaded: menu canvas, content area, logo, cursor, landing overlay, return arrow, loading screen.
 5. After 100 ms, `preloadAllAssets()` starts fetching every Work asset ([App.jsx:32](src/App.jsx:32) → [preloader.js:186](src/utils/preloader.js:186)).
-6. [LoadingScreen](src/components/LoadingScreen.jsx) counts from 0 to 100 over a **fixed 3.5 s**. The count is not tied to real loading, and it also runs on deep links.
+6. *(The fixed 3.5 s loading counter that used to run here was removed in area D.)*
 7. [LandingOverlay](src/components/LandingOverlay.jsx) draws a rectangle and a bezier "toy". Clicking "start here" expands the overlay and dismisses it to show the site. [ReturnArrow](src/components/ReturnArrow.jsx) (top-left ↖) brings it back.
 
 ## 3. Screen layers
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│ LoadingScreen     fixed 3.5 s counter (first ~3.9 s only)         │
 │ ReturnArrow       ↖ top-left, reopens landing                     │
 │ LandingOverlay    full-screen SVG: drifting bezier, shockwaves,   │
 │                   drag handles, accelerometer on mobile           │
@@ -182,10 +181,10 @@ The areas are ordered by expected impact. Each one is meant to be a self-contain
 - **Lint:** the React Compiler rules stay at warnings; the remaining hits are in ContentArea, the menu, VideoPlayer and LandingOverlay (areas F, G, H).
 
 ### D. First-load flow & perceived speed 🟠
-**Where:** [App.jsx](src/App.jsx), [LoadingScreen.jsx](src/components/LoadingScreen.jsx), [LandingOverlay.jsx](src/components/LandingOverlay.jsx)
+**Where:** [App.jsx](src/App.jsx), [LandingOverlay.jsx](src/components/LandingOverlay.jsx)
 
-- **The loading counter is fixed.** It always takes 3.5 s ([LoadingScreen.jsx:4](src/components/LoadingScreen.jsx:4)), whatever has loaded, and it shows on deep links too.
-- **Two gates stand between a visitor and the work:** the counter, then the landing click. Decide whether this is intentional brand theater or friction. Options include tying the counter to real readiness, shortening it, or skipping it for returning visitors.
+- ✅ **Loading counter removed (2026-10-11).** The fixed 3.5 s counter (`LoadingScreen`) is gone. The landing overlay, or the page itself on a deep link, now shows straight away.
+- **The landing click is still a gate.** Henry is deciding whether to keep the landing screen. If it stays, it could be skipped for returning visitors. If it goes, LandingOverlay, ReturnArrow and GSAP can be removed with it (see H).
 - **Measure real LCP / INP / CLS** on Vercel Speed Insights or Lighthouse as the baseline before changing anything.
 
 ### E. Fonts ✅ *done 2026-10-11*

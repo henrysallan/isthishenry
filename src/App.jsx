@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import P5Menu from './components/P5Menu_canvas';
 import ContentArea from './components/ContentArea';
 import CustomCursor from './components/CustomCursor';
 import LandingOverlay from './components/LandingOverlay';
 import ReturnArrow from './components/ReturnArrow';
 import HomeTextOverlay from './components/HomeTextOverlay';
-import LoadingScreen from './components/LoadingScreen';
 import { useNavigationStore } from './store/navigationStore';
 import { colorThemes } from './config/theme';
 import { preloadAllAssets } from './utils/preloader';
@@ -14,12 +13,6 @@ import './App.css';
 function App() {
   const currentTheme = useNavigationStore(state => state.currentTheme);
   const isThemeInverted = useNavigationStore(state => state.isThemeInverted);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const handleLoadingComplete = useCallback(() => {
-    setIsLoading(false);
-  }, []);
-
   // Listen for browser back/forward to sync URL with navigation state
   useEffect(() => {
     const cleanup = useNavigationStore.getState().setupPopstateListener();
@@ -71,7 +64,6 @@ function App() {
       <CustomCursor />
       <LandingOverlay />
       <ReturnArrow />
-      {isLoading && <LoadingScreen onComplete={handleLoadingComplete} />}
     </div>
   );
 }
