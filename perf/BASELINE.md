@@ -8,6 +8,7 @@ Re-run the same measurements after each area and add a column, so every change h
 |---|---|---|
 | C (render loops) | 2026-10-11 | Idle React commits went from 2 per frame to **0**. JS went from 474 to **230 KB brotli** (p5 removed with the logo animation). |
 | B (bundle) | 2026-10-11 | hls.js now loads only on pages with Vimeo streams. The JS every page loads went from 230 to **101 KB brotli**. |
+| A (media) | 2026-10-11 | Videos stream from FrameRate (Mux HLS, adaptive, with posters); 108 images re-encoded as JPEGs at 640/1280/2560 px with `srcset` and blur previews; the background preloader is gone. CDN files referenced went from **2.2 GB to 157 MB**, plus the streams. The 6 GIFs are untouched (largest 51 MB, on Sketches). Raw data: [results/after-a-weight.json](results/after-a-weight.json). |
 | E (fonts) | 2026-10-11 | Fonts went from 738 KB of TTFs + ~76 KB from Google Fonts to **118 KB of self-hosted WOFF2**. No third-party font requests; text widths are unchanged at every weight. |
 
 ---

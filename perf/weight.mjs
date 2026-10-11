@@ -4,7 +4,10 @@
 //
 //   npm run build && npm run perf:weight -- --label baseline
 //
-// Media sizes come from HEAD requests to the CDN (Content-Length).
+// Media sizes come from HEAD requests to the CDN (Content-Length). HLS streams
+// (.m3u8) are counted per page but have no single size. For images with
+// several widths, the largest one (the URL navigation.js links) is measured.
+// The background preloader measured in the baseline was removed in area A.
 
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -19,7 +22,6 @@ const { values: args } = parseArgs({ options: { label: { type: 'string', default
 
 const load = async (p) => (await runnerImport(path.join(ROOT, p), { configFile: false, logLevel: 'silent' })).module;
 const { navigationData } = await load('src/data/navigation.js');
-const { getAllAssetUrls } = await load('src/utils/preloader.js');
 
 const MB = (b) => +(b / 1048576).toFixed(1);
 const KB = (b) => +(b / 1024).toFixed(1);
@@ -57,8 +59,16 @@ async function buildWeight() {
 }
 
 // ── Pages → media URLs ──
+// The home reel is hardcoded in ContentArea's home view rather than navigation.js
+async function homeReel() {
+  const src = await readFile(path.join(ROOT, 'src/components/ContentArea.jsx'), 'utf8');
+  const home = src.slice(src.indexOf("view === 'home'"));
+  return home.match(/src="([^"]+)"/)?.[1];
+}
+const reel = await homeReel();
+
 function pages() {
-  const out = [{ route: '/', media: ['https://cdn.isthishenry.com/REEL_2025_07_A_HENRYALLAN_mp42k2.mp4'] }];
+  const out = [{ route: '/', media: reel ? [reel] : [] }];
   const walk = (items, base) => {
     for (const item of items) {
       const c = item.content || {};
@@ -98,8 +108,7 @@ async function headSizes(urls) {
 
 const build = await buildWeight();
 const pageList = pages();
-const preload = getAllAssetUrls();
-const allUrls = [...pageList.flatMap((p) => p.media), ...preload.videos, ...preload.images];
+const allUrls = pageList.flatMap((p) => p.media);
 const sizes = await headSizes(allUrls);
 const bytes = (u) => sizes.get(u)?.bytes || 0;
 
@@ -134,13 +143,6 @@ const result = {
     withCacheControl: unique.filter((u) => sizes.get(u)?.cacheControl).length,
     errors: unique.filter((u) => sizes.get(u)?.status !== 200),
   },
-  preloader: {
-    imagesFullyDownloaded: preload.images.length,
-    imagesMB: MB(preload.images.reduce((a, u) => a + bytes(u), 0)),
-    priorityVideosPreloadAuto: Math.min(9, preload.videos.length),
-    priorityVideosMB: MB(preload.videos.slice(0, 9).reduce((a, u) => a + bytes(u), 0)),
-    otherVideosMetadataOnly: Math.max(0, preload.videos.length - 9),
-  },
   pages: pageRows,
 };
 
@@ -151,6 +153,5 @@ await writeFile(file, JSON.stringify(result, null, 2) + '\n');
 console.log(`JS: ${build.jsKB.raw} KB raw / ${build.jsKB.gzip} KB gzip / ${build.jsKB.brotli} KB brotli in ${build.jsChunks} chunk(s)`);
 console.log(`Fonts: ${build.fontKB.raw} KB raw / ${build.fontKB.brotli} KB brotli`);
 console.log(`Media: ${result.media.uniqueFiles} files, ${result.media.totalMB} MB; ${result.media.imagesOver5MB} images > 5 MB; ${result.media.withCacheControl} with Cache-Control`);
-console.log(`Preloader: ${result.preloader.imagesMB} MB of images + ${result.preloader.priorityVideosMB} MB of preload=auto video`);
 console.table(pageRows.slice(0, 12));
 console.log(`→ ${path.relative(process.cwd(), file)}`);
