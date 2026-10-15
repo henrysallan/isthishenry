@@ -1,4 +1,4 @@
-import { navigationData } from '../data/navigation.js';
+import { navigationData } from '../data/site.js';
 
 /**
  * URL ↔ Navigation State sync utility
@@ -18,12 +18,18 @@ import { navigationData } from '../data/navigation.js';
 // ── Build lookup tables from navigation data ──
 
 // Map of page/submenu id → url path segments
-// We walk the tree once at import time so lookups are O(1).
+// We walk the tree once per content load so lookups are O(1).
 
-const idToPath = {};   // e.g. { 'expensify': '/work/expensify', 'sketches': '/work/more/sketches' }
-const pathToRoute = {}; // reverse: path string → route info
+let idToPath = {};   // e.g. { 'expensify': '/work/expensify', 'sketches': '/work/more/sketches' }
+let pathToRoute = {}; // reverse: path string → route info
+let routedMenu = null; // the menu the tables were built from
 
 function buildRoutes() {
+  if (routedMenu === navigationData.mainMenu) return;
+  routedMenu = navigationData.mainMenu;
+  idToPath = {};
+  pathToRoute = {};
+
   // Home
   idToPath['home'] = '/';
   pathToRoute['/'] = { type: 'home' };
@@ -89,8 +95,6 @@ function buildRoutes() {
   }
 }
 
-buildRoutes();
-
 // ── Public API ──
 
 /**
@@ -100,6 +104,7 @@ buildRoutes();
  */
 export function resolveUrlToState(pathname) {
   // Normalize: strip trailing slash (but keep "/" as is)
+  buildRoutes();
   const path = pathname === '/' ? '/' : pathname.replace(/\/+$/, '');
   const route = pathToRoute[path];
 
@@ -169,6 +174,7 @@ export function resolveUrlToState(pathname) {
  */
 export function stateToUrl(currentView) {
   if (!currentView || currentView === 'home') return '/';
+  buildRoutes();
   return idToPath[currentView] || '/';
 }
 

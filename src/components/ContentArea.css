@@ -633,12 +633,18 @@
   }
 }
 
-/* 12-Column Blocks Grid */
+/* Blocks: rows stacked down the page, each on a 12-column grid */
 .blocks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.blocks-row {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 10px;
-  width: 100%;
 }
 
 .block-item {
@@ -672,7 +678,7 @@
 }
 
 @media (max-width: 768px) {
-  .blocks-grid {
+  .blocks-row {
     grid-template-columns: 1fr;
   }
 

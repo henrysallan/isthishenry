@@ -14,8 +14,8 @@
   opacity: 1;
 }
 
-/* Hide default cursor */
-body,
-body * {
+/* Hide default cursor (the editor at /crm, html.crm, keeps it) */
+:root:not(.crm) body,
+:root:not(.crm) body * {
   cursor: none !important;
 }

@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { navigationData } from '../data/navigation';
+import { navigationData } from '../data/site';
 import './ContextMenu.css';
 
-const EMAIL = navigationData.home.content.email;
 // Keep the menu at least this far from the window edges
 const EDGE = 8;
 // How long "Copied" shows before the menu closes
@@ -104,7 +103,7 @@ function ContextMenu() {
 
   const copyEmail = async () => {
     try {
-      await copyText(EMAIL);
+      await copyText(navigationData.home.content.email);
       setCopied(true);
       closeTimerRef.current = setTimeout(() => setPosition(null), COPIED_MS);
     } catch {

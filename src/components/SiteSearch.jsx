@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
 import { fuzzySearch } from '../utils/fuzzySearch';
-import { siteIndex } from '../utils/siteIndex';
+import { getSiteIndex } from '../utils/siteIndex';
 import SearchField from './SearchField';
 import './SiteSearch.css';
 
@@ -34,7 +34,8 @@ function SiteSearch() {
 
   useEffect(() => () => requestRef.current?.abort(), []);
 
-  const matches = useMemo(() => fuzzySearch(siteIndex, query).slice(0, MAX_RESULTS), [query]);
+  const siteIndex = getSiteIndex();
+  const matches = useMemo(() => fuzzySearch(siteIndex, query).slice(0, MAX_RESULTS), [siteIndex, query]);
   const rows = reply
     ? (reply.pages || []).map(id => siteIndex.find(entry => entry.id === id)).filter(Boolean)
     : matches;

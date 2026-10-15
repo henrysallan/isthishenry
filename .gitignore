@@ -36,3 +36,6 @@ cdn-mirror
 framerate-export
 image-build
 gif-videos
+
+# Editor revisions saved locally when Supabase isn't configured (api/_lib/store.js)
+.crm-local

@@ -1,9 +1,9 @@
-import { navigationData } from '../data/navigation.js';
+import { navigationData } from '../data/site.js';
 
 // Every page a visitor can open from the menu, flattened for site search.
 // `section` is the trail of menus above a page, e.g. "Work / More". Fields sit
 // where fuzzySearch looks for them: title, content.tags, content.description.
-function buildSiteIndex() {
+function buildSiteIndex(mainMenu) {
   const entries = [];
   const walk = (items, trail) => {
     for (const item of items) {
@@ -21,8 +21,17 @@ function buildSiteIndex() {
       if (item.submenu) walk(item.submenu, [...trail, item.title]);
     }
   };
-  walk(navigationData.mainMenu, []);
+  walk(mainMenu, []);
   return entries;
 }
 
-export const siteIndex = buildSiteIndex();
+// Rebuilt whenever the site's content is replaced
+let index = null;
+let indexedMenu = null;
+export function getSiteIndex() {
+  if (indexedMenu !== navigationData.mainMenu) {
+    indexedMenu = navigationData.mainMenu;
+    index = buildSiteIndex(indexedMenu);
+  }
+  return index;
+}

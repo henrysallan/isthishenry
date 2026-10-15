@@ -18,7 +18,9 @@ export const useNavigationStore = create((set, get) => ({
   // Internal flag: when true, the URL subscriber skips pushing
   _skipUrlPush: false,
 
-  // Initialise navigation state from the current URL (called once on mount).
+  // Initialise navigation state from the current URL. main.jsx calls this once
+  // the content has loaded and before the first render, so a deep link shows
+  // its page straight away rather than flashing home.
   // Returns true if a deep link was resolved.
   initFromUrl: () => {
     const navState = resolveUrlToState(window.location.pathname);
@@ -251,8 +253,3 @@ useNavigationStore.subscribe((state) => {
     }
   }
 });
-
-// ── Resolve deep-link BEFORE first React render ──
-// At module level so the first render already shows the linked page rather
-// than flashing home.
-useNavigationStore.getState().initFromUrl();

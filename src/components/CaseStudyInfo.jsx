@@ -1,4 +1,4 @@
-import { navigationData } from '../data/navigation';
+import { navigationData } from '../data/site';
 import { useNavigationStore } from '../store/navigationStore';
 import { isCaseStudy, linkLabel } from '../utils/caseStudy';
 import './CaseStudyInfo.css';

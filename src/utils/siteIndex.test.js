@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { navigationData } from '../data/navigation';
-import { siteIndex } from './siteIndex';
+import { getSiteIndex } from './siteIndex';
 import { fuzzySearch } from './fuzzySearch';
 import { stateToUrl } from './urlSync';
+
+const siteIndex = getSiteIndex();
 
 describe('siteIndex', () => {
   it('lists every visible page once, each with a URL', () => {

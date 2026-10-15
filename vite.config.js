@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Serves api/*.js (Vercel Functions in production) from the dev server, so
+// Serves api/**/*.js (Vercel Functions in production) from the dev server, so
 // `npm run dev` can answer /api requests. Each file exports handlers named after
 // HTTP methods that take a Request and return a Response.
 function devApi() {
@@ -10,7 +10,8 @@ function devApi() {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const { pathname } = new URL(req.url, 'http://localhost')
-        const name = pathname.match(/^\/api\/([a-z0-9-]+)$/)?.[1]
+        // e.g. /api/ask, /api/crm/session; _lib isn't a route
+        const name = pathname.match(/^\/api\/((?:[a-z0-9-]+\/)*[a-z0-9-]+)$/)?.[1]
         if (!name) return next()
         try {
           const handlers = await server.ssrLoadModule(`/api/${name}.js`)
@@ -40,10 +41,13 @@ function devApi() {
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
-  // Server-only secrets from .env.local for the dev API (Vite only exposes
-  // VITE_-prefixed variables to the client)
+  // Server-only secrets from .env.local (ANTHROPIC_API_KEY, SUPABASE_*, R2_*,
+  // CRM_*) for the dev API. Vite only exposes VITE_-prefixed variables to the
+  // client; these stay on the server.
   const env = loadEnv(mode, process.cwd(), '')
-  if (env.ANTHROPIC_API_KEY) process.env.ANTHROPIC_API_KEY ??= env.ANTHROPIC_API_KEY
+  for (const [key, value] of Object.entries(env)) {
+    if (/^(ANTHROPIC|SUPABASE|R2|CRM)_/.test(key)) process.env[key] ??= value
+  }
 
   return {
     plugins: [react(), devApi()],
@@ -52,5 +56,9 @@ export default defineConfig(({ command, mode }) => {
     },
     // Strip console.log/debug from production bundles; warn/error stay.
     esbuild: command === 'build' ? { pure: ['console.log', 'console.debug'] } : undefined,
+    test: {
+      // Fills in the site content from the navigation.js snapshot
+      setupFiles: ['./src/test/setupSite.js'],
+    },
   }
 })

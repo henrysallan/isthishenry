@@ -4,12 +4,15 @@
 // Needs ANTHROPIC_API_KEY: a Vercel environment variable in production, or
 // .env.local when running `npm run dev`.
 import Anthropic from '@anthropic-ai/sdk';
-import { OUTPUT_SCHEMA, SYSTEM_PROMPT, readAnswer } from './_lib/assistant.js';
+import { assistantContext, readAnswer } from './_lib/assistant.js';
+import { liveSite } from './_lib/siteContent.js';
 
 const MODEL = 'claude-haiku-5-5';
 const MAX_QUESTION_LENGTH = 500;
 // Answers are a few sentences; the cap also bounds cost per request
 const MAX_TOKENS = 1024;
+// How long an instance reuses the site content it last read
+const CONTENT_MAX_AGE_MS = 60_000;
 
 // Per-instance throttle. Fluid Compute reuses instances, so this catches casual
 // hammering; add a Vercel Firewall rate-limit rule for a hard limit.
@@ -62,18 +65,19 @@ export async function POST(request) {
   client ??= new Anthropic();
 
   try {
+    const { pageIds, systemPrompt, outputSchema } = assistantContext((await liveSite({ maxAgeMs: CONTENT_MAX_AGE_MS })).doc);
     const message = await client.messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
       // Short factual answers from a fixed context don't need deep thinking
       output_config: {
         effort: 'low',
-        format: { type: 'json_schema', schema: OUTPUT_SCHEMA },
+        format: { type: 'json_schema', schema: outputSchema },
       },
-      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: `<question>${question}</question>` }],
     });
-    return reply(readAnswer(message));
+    return reply(readAnswer(message, pageIds));
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) {
       return reply({ error: 'Lots of questions right now. Try again in a minute.' }, 429);

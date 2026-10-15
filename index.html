@@ -28,6 +28,16 @@
     <link rel="dns-prefetch" href="https://cdn.isthishenry.com">
     
     <title>isthishenry</title>
+
+    <!-- Start loading the site's content (pages, menu, media) while the code
+         downloads; src/main.jsx waits for it. The editor at /crm loads its own. -->
+    <script>
+      if (!/^\/crm(\/|$)/.test(location.pathname)) {
+        window.__site = fetch('/api/site')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .catch(function () { return null; });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

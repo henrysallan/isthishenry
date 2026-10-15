@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
-import { navigationData } from '../data/navigation';
+import { navigationData } from '../data/site';
 import { useNavigationStore } from '../store/navigationStore';
 import { colorThemes, theme } from '../config/theme';
 import './P5Menu.css';

@@ -1,8 +1,9 @@
 // What the site's AI assistant knows and how it must answer. Server-only: this
 // lives under api/ (underscore-prefixed, so Vercel doesn't serve it as its own
 // function) and is never bundled into the client.
-import { navigationData } from '../../src/data/navigation.js';
-import { siteIndex } from '../../src/utils/siteIndex.js';
+import { findItem } from '../../src/data/siteDoc.js';
+import { navigationData, setSite } from '../../src/data/site.js';
+import { getSiteIndex } from '../../src/utils/siteIndex.js';
 import { stateToUrl } from '../../src/utils/urlSync.js';
 
 // Henry's professional profile. Along with the page list, this is everything the
@@ -46,22 +47,9 @@ Across client work and personal projects, Henry favors systems over one-offs: pr
 
 Contact: isthishenry@gmail.com. LinkedIn: linkedin.com/in/henryallan. Instagram: @isthishenry.`;
 
-export const PAGE_IDS = siteIndex.map(entry => entry.id);
-
 // Year and external link aren't in the search index, so read them from the data
-function findContent(items, id) {
-  for (const item of items) {
-    if (item.id === id) return item.content || {};
-    if (item.submenu) {
-      const content = findContent(item.submenu, id);
-      if (content) return content;
-    }
-  }
-  return null;
-}
-
 function describePage(entry) {
-  const content = findContent(navigationData.mainMenu, entry.id) || {};
+  const content = findItem(navigationData, entry.id)?.item.content || {};
   const details = [entry.section, content.year, entry.content.tags].filter(Boolean).join(' · ');
   const lines = [`Title: ${entry.title}${details ? ` (${details})` : ''}`];
   if (entry.content.description) lines.push(entry.content.description);
@@ -69,7 +57,7 @@ function describePage(entry) {
   return `<page id="${entry.id}" url="${stateToUrl(entry.id)}">\n${lines.join('\n')}\n</page>`;
 }
 
-export const SYSTEM_PROMPT = `You are the assistant on isthishenry.com, the portfolio site of Henry Allan. Visitors type questions into the site's search bar and you answer them.
+const systemPrompt = (siteIndex) => `You are the assistant on isthishenry.com, the portfolio site of Henry Allan. Visitors type questions into the site's search bar and you answer them.
 
 Answer only from the information in <about> and <pages> below. You can talk about:
 - Henry: his work, clients, projects, skills, tools and experience
@@ -93,26 +81,39 @@ ${ABOUT_HENRY}
 ${siteIndex.map(describePage).join('\n')}
 </pages>`;
 
-export const OUTPUT_SCHEMA = {
+const outputSchema = (pageIds) => ({
   type: 'object',
   properties: {
     answer: { type: 'string' },
-    pages: { type: 'array', items: { type: 'string', enum: PAGE_IDS } },
+    pages: { type: 'array', items: { type: 'string', enum: pageIds } },
   },
   required: ['answer', 'pages'],
   additionalProperties: false,
-};
+});
+
+// The prompt, answer schema and linkable page ids for a site document (the live
+// one from the editor). Rebuilt only when the document changes, so the prompt
+// stays byte-identical between saves and keeps hitting the prompt cache.
+let context = null;
+export function assistantContext(doc) {
+  if (context?.doc === doc) return context;
+  setSite(doc);
+  const siteIndex = getSiteIndex();
+  const pageIds = siteIndex.map(entry => entry.id);
+  context = { doc, pageIds, systemPrompt: systemPrompt(siteIndex), outputSchema: outputSchema(pageIds) };
+  return context;
+}
 
 export const DECLINE = 'I can only help with questions about Henry and his work. Try asking what he works on or how to reach him.';
 
 // The visitor-facing reply from a Messages API response. Throws when the
 // response isn't the expected JSON (e.g. cut off at max_tokens).
-export function readAnswer(message) {
+export function readAnswer(message, pageIds) {
   if (message.stop_reason === 'refusal') return { answer: DECLINE, pages: [] };
   const text = message.content.find(block => block.type === 'text')?.text;
   const data = JSON.parse(text);
   const answer = typeof data.answer === 'string' ? data.answer.trim() : '';
   if (!answer) throw new Error('Empty answer');
-  const pages = Array.isArray(data.pages) ? data.pages.filter(id => PAGE_IDS.includes(id)) : [];
+  const pages = Array.isArray(data.pages) ? data.pages.filter(id => pageIds.includes(id)) : [];
   return { answer, pages: [...new Set(pages)].slice(0, 3) };
 }

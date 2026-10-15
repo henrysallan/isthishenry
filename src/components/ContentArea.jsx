@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigationStore } from '../store/navigationStore';
-import { navigationData } from '../data/navigation';
+import { navigationData } from '../data/site';
+import { findItem, isVideoSrc, pageBlocks } from '../data/siteDoc';
 import { R2Video } from '../utils/videoStreaming';
 import VideoPlayer from './VideoPlayer';
 import LoadingSpinner from './LoadingSpinner';
@@ -17,28 +18,13 @@ import './ContentArea.css';
 
 // Collect all media URLs from the Sketches section for the about page showcase
 function collectSketchesMedia() {
-  const media = [];
-  const walk = (items) => {
-    if (!items) return;
-    for (const item of items) {
-      if (item.id === 'sketches' && item.content?.blocks) {
-        const baseUrl = item.content.baseUrl || '';
-        for (const block of item.content.blocks) {
-          if (!block.src) continue;
-          const src = block.src.startsWith('http') ? block.src : `${baseUrl}${block.src}`;
-          const isVideo = block.type === 'video' || /\.(mp4|mov|webm|m3u8)$/i.test(src);
-          media.push({ src, type: isVideo ? 'video' : 'image' });
-        }
-        return;
-      }
-      if (item.submenu) walk(item.submenu);
-    }
-  };
-  walk(navigationData.mainMenu);
-  return media;
+  const sketches = findItem(navigationData, 'sketches')?.item;
+  return pageBlocks(sketches?.content)
+    .filter(block => block.src && block.type !== 'text' && block.type !== 'vimeo')
+    .map(block => ({ src: block.src, type: isVideoBlock(block) ? 'video' : 'image' }));
 }
 
-const SKETCHES_MEDIA = collectSketchesMedia();
+const isVideoBlock = (block) => block.type === 'video' || isVideoSrc(block.src);
 
 // Shuffles array in place (Fisher-Yates)
 function shuffle(arr) {
@@ -54,7 +40,7 @@ const CYCLE_INTERVAL = 800; // ms between video swaps
 
 // A single about-page media slot that cycles through sketches assets (images + videos)
 function AboutMediaSlot() {
-  const [shuffled] = useState(() => shuffle(SKETCHES_MEDIA));
+  const [shuffled] = useState(() => shuffle(collectSketchesMedia()));
   const indexRef = useRef(0);
   const [active, setActive] = useState(0); // 0 or 1
   const [items, setItems] = useState([shuffled[0] || null, null]);
@@ -139,8 +125,8 @@ function AboutMediaSlot() {
 // Published images (scripts/publish-images.mjs) show a tiny blurred preview at
 // once, at their real aspect ratio, then load the sharp version, at the width the
 // screen needs, as they near the viewport. Other images just load lazily.
-function ProgressiveImage({ src, alt, className, onClick, sizes = columnSizes() }) {
-  const variant = responsiveImage(src);
+function ProgressiveImage({ src, alt, className, onClick, sizes = columnSizes(), meta }) {
+  const variant = responsiveImage(src, meta);
   const [loadedSrc, setLoadedSrc] = useState(null);
   const [failedSrc, setFailedSrc] = useState(null);
   const [attempt, setAttempt] = useState(0);
@@ -647,7 +633,7 @@ function ContentArea() {
     const isTextOnly = !contentData.videoUrl && !contentData.videoKey && 
                        !contentData.imageGallery && !contentData.videoGallery && 
                        !contentData.mediaGallery && !contentData.sections &&
-                       !contentData.contactLinks && !contentData.blocks;
+                       !contentData.contactLinks && !contentData.rows;
     
     // Regular page view
     const hasCaseStudyHeader = isCaseStudy(contentData);
@@ -686,64 +672,58 @@ function ContentArea() {
             ))}
           </div>
         )}
-        {contentData.blocks && (() => {
-          // Build flat media list for lightbox navigation
-          const mediaItems = contentData.blocks
-            .map((block) => {
-              if (block.type === 'text' || !block.src) return null;
-              const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
-              const isVideo = block.type === 'video' || /\.(mp4|mov|webm|m3u8)$/i.test(fullSrc);
-              const isVimeo = block.type === 'vimeo';
-              if (isVimeo) return null; // skip vimeo embeds from lightbox
-              return { src: fullSrc, type: isVideo ? 'video' : 'image', alt: `${contentData.title}` };
-            })
-            .filter(Boolean);
+        {contentData.rows && (() => {
+          // Build flat media list for lightbox navigation (Vimeo embeds stay out of it)
+          const blocks = pageBlocks(contentData);
+          const mediaItems = blocks
+            .filter((block) => block.src && block.type !== 'text' && block.type !== 'vimeo')
+            .map((block) => ({ src: block.src, type: isVideoBlock(block) ? 'video' : 'image', alt: `${contentData.title}` }));
 
-          const openLightbox = (fullSrc) => {
-            const idx = mediaItems.findIndex(m => m.src === fullSrc);
+          const openLightbox = (src) => {
+            const idx = mediaItems.findIndex(m => m.src === src);
             setLightboxItems(mediaItems);
             setLightboxIndex(idx >= 0 ? idx : 0);
           };
 
           return (
             <div className="blocks-grid">
-              {contentData.blocks.map((block, index) => {
-                const isText = block.type === 'text';
-                if (isText) {
-                  return (
-                    <div
-                      key={index}
-                      className="block-item block-text"
-                      style={{ gridColumn: `${block.colStart} / span ${block.colSpan}` }}
-                    >
-                      <p>{block.content}</p>
-                    </div>
-                  );
-                }
-                const fullSrc = block.src.startsWith('http') ? block.src : `${contentData.baseUrl || ''}${block.src}`;
-                const isVideo = block.type === 'video' || /\.(mp4|mov|webm|m3u8)$/i.test(fullSrc);
-                const isVimeo = block.type === 'vimeo';
-                return (
-                  <div
-                    key={index}
-                    className={`block-item ${!isVimeo ? 'clickable' : ''}`}
-                    style={{ gridColumn: `${block.colStart} / span ${block.colSpan}` }}
-                    onClick={!isVimeo ? () => openLightbox(fullSrc) : undefined}
-                  >
-                    {isVimeo ? (
-                      <VimeoEmbed src={block.src} aspectRatio={block.aspectRatio} />
-                    ) : isVideo ? (
-                      <LazyVideo src={fullSrc} aspectRatio={block.aspectRatio} />
-                    ) : (
-                      <ProgressiveImage
-                        src={fullSrc}
-                        alt={`${contentData.title} - ${index + 1}`}
-                        sizes={columnSizes((block.colSpan || 12) / 12)}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+              {contentData.rows.map((row) => (
+                <div key={row.id} className="blocks-row">
+                  {row.blocks.map((block) => {
+                    const gridColumn = `${block.colStart} / span ${block.colSpan}`;
+                    if (block.type === 'text') {
+                      return (
+                        <div key={block.id} className="block-item block-text" style={{ gridColumn }}>
+                          <p>{block.content}</p>
+                        </div>
+                      );
+                    }
+                    if (!block.src) return null;
+                    const isVimeo = block.type === 'vimeo';
+                    return (
+                      <div
+                        key={block.id}
+                        className={`block-item ${!isVimeo ? 'clickable' : ''}`}
+                        style={{ gridColumn }}
+                        onClick={!isVimeo ? () => openLightbox(block.src) : undefined}
+                      >
+                        {isVimeo ? (
+                          <VimeoEmbed src={block.src} aspectRatio={block.aspectRatio} />
+                        ) : isVideoBlock(block) ? (
+                          <LazyVideo src={block.src} poster={block.poster} aspectRatio={block.aspectRatio} />
+                        ) : (
+                          <ProgressiveImage
+                            src={block.src}
+                            meta={block}
+                            alt={block.alt || `${contentData.title} - ${blocks.indexOf(block) + 1}`}
+                            sizes={columnSizes(block.colSpan / 12)}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           );
         })()}
