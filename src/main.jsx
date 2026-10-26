@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { setSite, snapshotDoc } from './data/site'
 import { useNavigationStore } from './store/navigationStore'
+import { initTheme } from './store/themeStore'
 
 // How long to wait for the live content before showing the bundled snapshot
 const SITE_TIMEOUT_MS = 5000
@@ -29,6 +30,7 @@ if (/^\/crm(\/|$)/.test(window.location.pathname)) {
     </StrictMode>,
   )
 } else {
+  initTheme()
   setSite(await loadSite())
   useNavigationStore.getState().initFromUrl()
   root.render(

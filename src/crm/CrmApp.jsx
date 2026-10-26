@@ -1,21 +1,7 @@
 import { useEffect, useState } from 'react';
-import { colorThemes } from '../config/theme';
 import { getSession, signIn } from './api';
 import Editor from './Editor';
 import './crm.css';
-
-// The editor uses the site's light theme (App.jsx sets these for the site itself)
-function applyTheme() {
-  const colors = colorThemes.classic;
-  const root = document.documentElement.style;
-  root.setProperty('--color-background', colors.background);
-  root.setProperty('--color-content-area', colors.contentArea);
-  root.setProperty('--color-border', colors.border);
-  root.setProperty('--color-text', colors.text);
-  root.setProperty('--color-text-light', colors.textLight);
-  root.setProperty('--color-wire', colors.wire);
-  root.setProperty('--color-accent', colors.accent);
-}
 
 function SignIn({ configured, onSignedIn }) {
   const [password, setPassword] = useState('');
@@ -65,7 +51,6 @@ function CrmApp() {
   const [session, setSession] = useState(null);
 
   useEffect(() => {
-    applyTheme();
     document.title = 'Editor · isthishenry';
     getSession().then(setSession, (error) => setSession({ error: error.message }));
   }, []);

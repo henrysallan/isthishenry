@@ -9,9 +9,9 @@
   flex-direction: column;
   gap: 2px;
   border-radius: 4px;
-  background: #e9e6e6;
+  background: var(--color-panel);
   /* A soft lift so it reads as floating over the page, which is nearly the same grey */
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-popover);
   animation: context-menu-in 0.12s ease;
 }
 
@@ -32,8 +32,8 @@
   padding: 6px 8px;
   border: none;
   border-radius: 3px;
-  /* Each option sits on its own light rect, a step darker on hover */
-  background: #e5e5e5;
+  /* Each option sits on its own rect, a step further from the page on hover */
+  background: var(--color-panel-item);
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 700;
@@ -47,8 +47,8 @@
 
 .context-menu-item:hover,
 .context-menu-item:focus-visible {
-  background-color: #dedede;
-  /* A little darker on hover; also beats index.css's blue a:hover on the links */
+  background-color: var(--color-panel-item-active);
+  /* A little stronger on hover; also beats index.css's blue a:hover on the links */
   color: color-mix(in srgb, var(--color-text) 72%, var(--color-background));
 }
 

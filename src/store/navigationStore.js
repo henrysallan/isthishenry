@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { resolveUrlToState, stateToUrl, pushUrl, replaceUrl } from '../utils/urlSync';
 
-// Always use light mode (classic theme)
-
 export const useNavigationStore = create((set, get) => ({
   // Current view state - start on home page
   currentView: 'home', // 'home' or page id
@@ -12,8 +10,6 @@ export const useNavigationStore = create((set, get) => ({
   expandedNestedSubmenuId: null, // ID of nested submenu (e.g. "More" inside Work)
   parentView: null, // For nested grids: the intermediate page to return to on go-back
   isHoveringMenuItem: false, // Track if hovering over any menu item
-  currentTheme: 'classic', // Active color theme
-  isThemeInverted: false, // Always light mode
   
   // Internal flag: when true, the URL subscriber skips pushing
   _skipUrlPush: false,
@@ -230,16 +226,7 @@ export const useNavigationStore = create((set, get) => ({
   // means subscribers are only notified when the value actually changes.
   setHoveringMenuItem: (isHovering) => set((state) =>
     state.isHoveringMenuItem === isHovering ? state : { isHoveringMenuItem: isHovering }
-  ),
-  
-  setTheme: (themeName) => set((state) => {
-    // If clicking the same theme, toggle inversion
-    if (state.currentTheme === themeName) {
-      return { isThemeInverted: !state.isThemeInverted };
-    }
-    // If clicking a different theme, set it and reset inversion
-    return { currentTheme: themeName, isThemeInverted: false };
-  })
+  )
 
 }));
 

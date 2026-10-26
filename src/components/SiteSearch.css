@@ -1,12 +1,24 @@
 /* Bottom of the left column, as wide as the open nav box: 10px from the screen
    edge and running to the column edge. Above the dot grid and case study
-   details, below the nav box when it opens over it. */
+   details, below the nav box when it opens over it. The results panel spans
+   the whole bar, field and toggle. */
 .site-search {
   position: fixed;
   left: 10px;
   bottom: 10px;
   width: calc(100vw / 4 - 10px);
   z-index: 3;
+}
+
+/* The search field, then the light/dark toggle (ThemeToggle.css) */
+.site-search-bar {
+  display: flex;
+  gap: 6px;
+}
+
+.site-search-field {
+  flex: 1;
+  min-width: 0;
 }
 
 /* While results show they cover the nav box (same layer, later in the page),
@@ -29,7 +41,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: 4px;
-  background: #e9e6e6;
+  background: var(--color-panel);
   animation: site-search-in 0.12s ease;
 }
 
@@ -70,7 +82,7 @@
   padding: 7px 8px;
   border: none;
   border-radius: 3px;
-  background: #e5e5e5;
+  background: var(--color-panel-item);
   font-family: 'Inter', sans-serif;
   text-align: left;
   color: var(--color-text);
@@ -79,7 +91,7 @@
 
 /* Hover and arrow keys share one highlight */
 .site-search-result.is-active {
-  background: #dcdcdc;
+  background: var(--color-panel-item-active);
 }
 
 /* index.css rings every focused button; focus stays in the field anyway */

@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
 import { navigationData } from '../data/site';
 import { useNavigationStore } from '../store/navigationStore';
-import { colorThemes, theme } from '../config/theme';
+import { useThemeStore } from '../store/themeStore';
+import { theme } from '../config/theme';
 import './P5Menu.css';
 
 // ── Pure-math helpers (replace p5.bezierPoint) ──
@@ -58,8 +59,7 @@ const MENU_BOTTOM_PAD = 24;
 const MENU_BREATHING = 16;
 // How far past the box's right edge the active item's wire ends, so it leaves the box
 const PAGE_WIRE_OVERSHOOT = 20;
-// Keyboard highlight behind the selected menu item
-const KEYBOARD_HIGHLIGHT = '#dcdcdc';
+// Padding of the keyboard highlight behind the selected menu item
 const KEYBOARD_PAD_X = 6;
 const KEYBOARD_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', 'Escape']);
 // Ignore hover while the box flies from the centre to the top after leaving
@@ -155,6 +155,21 @@ function findTitle(items, id) {
 }
 
 // ── Color helpers ──
+// The canvases can't use CSS variables, so they take the current theme's
+// colors (index.css) from the page, again whenever the theme changes
+function readCanvasColors() {
+  const style = getComputedStyle(document.documentElement);
+  const read = (name) => style.getPropertyValue(name).trim();
+  return {
+    background: read('--color-background'),
+    text: read('--color-text'),
+    dot: read('--color-dot'),
+    wire: read('--color-wire'),
+    // Keyboard highlight, like a hovered search result
+    highlight: read('--color-panel-item-active'),
+  };
+}
+
 function withAlpha(hexOrColor, alpha) {
   // Accepts "#rrggbb" or "rgb(…)" or a plain color name
   // Returns an rgba string
@@ -182,6 +197,7 @@ function P5Menu() {
   const headerRef = useRef(null);
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
+  const colorsRef = useRef(null);
   const mouseRef = useRef({ x: -9999, y: -9999 });
   const rafRef = useRef(null);
   // Arrow-key selection: which column and row is highlighted
@@ -306,6 +322,7 @@ function P5Menu() {
     const { canvas } = createCanvas(menuHost, getOpenBoxSize);
     canvasRef.current = canvas;
     ctxRef.current = canvas.getContext('2d');
+    colorsRef.current = readCanvasColors();
 
     // Load Inter Bold through the @font-face rules in index.css
     const anim = animRef.current;
@@ -597,21 +614,19 @@ function P5Menu() {
 
     // ── Read store ──
     const state = useNavigationStore.getState();
-    const { currentView, activeMenuItem, expandedSubmenuId, expandedNestedSubmenuId, currentTheme, isThemeInverted } = state;
+    const { currentView, activeMenuItem, expandedSubmenuId, expandedNestedSubmenuId } = state;
     const kb = keyboardRef.current;
     const isKeyboardItem = (level, i) => kb.active && kb.level === level && kb.index === i;
-    const activeColors = colorThemes[currentTheme];
-
-    const bgColor = isThemeInverted ? activeColors.text : activeColors.background;
-    const textColor = isThemeInverted ? activeColors.background : activeColors.text;
-    const wireColor = isThemeInverted ? activeColors.background : activeColors.wire;
+    const colors = colorsRef.current;
+    const textColor = colors.text;
+    const wireColor = colors.wire;
 
     // ── Column background + dots ──
-    dctx.fillStyle = bgColor;
+    dctx.fillStyle = colors.background;
     dctx.fillRect(0, 0, col.w, col.h);
     if (!isMobile()) {
       updateDots();
-      drawDots(dctx, textColor);
+      drawDots(dctx, colors.dot);
     }
 
     // ── Font setup ──
@@ -1071,7 +1086,7 @@ function P5Menu() {
     anim.keyboardOpacity += ((keyboardTarget ? 1 : 0) - anim.keyboardOpacity) * 0.25;
     if (anim.keyboardRect && anim.keyboardOpacity > 0.01) {
       const r = anim.keyboardRect;
-      ctx.fillStyle = withAlpha(KEYBOARD_HIGHLIGHT, anim.keyboardOpacity);
+      ctx.fillStyle = withAlpha(colors.highlight, anim.keyboardOpacity);
       ctx.beginPath();
       ctx.roundRect(r.x, r.y, r.w, r.h, 4);
       ctx.fill();
@@ -1169,9 +1184,16 @@ function P5Menu() {
     window.addEventListener('resize', wake);
     const unsubscribe = useNavigationStore.subscribe(wake);
 
+    // Redraw in the new theme's colors
+    const unsubscribeTheme = useThemeStore.subscribe(() => {
+      colorsRef.current = readCanvasColors();
+      wake();
+    });
+
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       unsubscribe();
+      unsubscribeTheme();
       window.removeEventListener('resize', wake);
       for (const canvas of canvases) {
         wakeEvents.forEach(ev => canvas.removeEventListener(ev, wake));

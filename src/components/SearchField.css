@@ -52,7 +52,7 @@
   border: none;
   border-radius: 4px;
   outline: none;
-  background-color: #e9e6e6;
+  background-color: var(--color-panel);
   font-family: 'Inter', sans-serif;
   font-size: 15px;
   font-weight: 700;
@@ -118,5 +118,5 @@
 
 .search-field-input:hover,
 .search-field-input:focus {
-  background-color: #e2e2e2;
+  background-color: var(--color-panel-hover);
 }

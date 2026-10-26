@@ -3,6 +3,7 @@ import { useNavigationStore } from '../store/navigationStore';
 import { fuzzySearch } from '../utils/fuzzySearch';
 import { getSiteIndex } from '../utils/siteIndex';
 import SearchField from './SearchField';
+import ThemeToggle from './ThemeToggle';
 import './SiteSearch.css';
 
 const MAX_RESULTS = 8;
@@ -16,8 +17,8 @@ function SendArrowIcon() {
   );
 }
 
-// Search bar at the bottom of the left column. As you type, matching pages from
-// across the site show in a panel above it. Enter (or the arrow) sends the text
+// Search bar at the bottom of the left column, with the light/dark toggle at its
+// right. As you type, matching pages from across the site show in a panel above it. Enter (or the arrow) sends the text
 // to the site assistant (api/ask.js), whose answer replaces the matches along
 // with the pages it points to. Up/down pick a page and Enter opens it; Escape
 // clears.
@@ -126,24 +127,28 @@ function SiteSearch() {
           })}
         </div>
       )}
-      <SearchField
-        label="Ask about Henry or search the site"
-        value={query}
-        onChange={(e) => updateQuery(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onClear={() => updateQuery('')}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        icon={<SendArrowIcon />}
-        onIconClick={ask}
-        iconLabel="Ask"
-        inputProps={{
-          role: 'combobox',
-          'aria-expanded': showPanel,
-          'aria-controls': 'site-search-results',
-          'aria-activedescendant': showPanel && rows[activeIndex] ? `site-search-result-${activeIndex}` : undefined,
-        }}
-      />
+      <div className="site-search-bar">
+        <SearchField
+          className="site-search-field"
+          label="Ask about Henry or search the site"
+          value={query}
+          onChange={(e) => updateQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onClear={() => updateQuery('')}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          icon={<SendArrowIcon />}
+          onIconClick={ask}
+          iconLabel="Ask"
+          inputProps={{
+            role: 'combobox',
+            'aria-expanded': showPanel,
+            'aria-controls': 'site-search-results',
+            'aria-activedescendant': showPanel && rows[activeIndex] ? `site-search-result-${activeIndex}` : undefined,
+          }}
+        />
+        <ThemeToggle />
+      </div>
     </div>
   );
 }

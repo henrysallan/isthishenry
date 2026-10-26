@@ -57,7 +57,7 @@
   width: 100vw;
   height: 100vh;
   z-index: 99999;
-  background: #ffffff;
+  background: var(--color-placeholder);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,7 +67,7 @@
   font-family: 'Inter', sans-serif;
   font-size: clamp(48px, 8vw, 96px);
   font-weight: 800;
-  color: rgba(0, 0, 0, 0.15);
+  color: color-mix(in srgb, var(--color-text) 15%, transparent);
   line-height: 1;
 }
 

@@ -29,13 +29,28 @@
     
     <title>isthishenry</title>
 
+    <!-- Browser bars match the page background; src/store/themeStore.js fills it in -->
+    <meta name="theme-color" content="">
+
     <!-- Start loading the site's content (pages, menu, media) while the code
-         downloads; src/main.jsx waits for it. The editor at /crm loads its own. -->
+         downloads; src/main.jsx waits for it. The editor at /crm loads its own.
+         Also pick light or dark before the first paint: the theme the toggle
+         saved, else the system's (src/store/themeStore.js takes over from here).
+         The editor stays light. -->
     <script>
       if (!/^\/crm(\/|$)/.test(location.pathname)) {
         window.__site = fetch('/api/site')
           .then(function (r) { return r.ok ? r.json() : null; })
           .catch(function () { return null; });
+
+        (function () {
+          var theme = null;
+          try { theme = localStorage.getItem('theme'); } catch (e) {}
+          if (theme !== 'light' && theme !== 'dark') {
+            theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.dataset.theme = theme;
+        })();
       }
     </script>
   </head>

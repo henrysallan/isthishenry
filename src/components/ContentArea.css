@@ -368,7 +368,7 @@
   font-size: clamp(16px, 1.8vw, 26px);
   font-weight: 800;
   line-height: 0.85;
-  color: #000;
+  color: var(--color-text);
 }
 
 /* Contact Links */
@@ -424,12 +424,12 @@
 }
 
 .content-inner::-webkit-scrollbar-thumb {
-  background: #b2b2b2;
+  background: var(--color-scrollbar);
   border-radius: 4px;
 }
 
 .content-inner::-webkit-scrollbar-thumb:hover {
-  background: #999999;
+  background: var(--color-scrollbar-hover);
 }
 
 /* Grid content styles */
@@ -468,14 +468,14 @@
   padding: 6px 8px;
   margin: 0 -8px;
   border-radius: 4px;
-  background-color: #e9e6e6;
+  background-color: var(--color-panel);
   cursor: pointer;
   gap: 20px;
   transition: background-color 0.2s ease;
 }
 
 .work-row:hover {
-  background-color: #e2e2e2;
+  background-color: var(--color-panel-hover);
 }
 
 .work-row-text {
@@ -771,7 +771,7 @@
 .image-placeholder {
   width: 100%;
   padding-bottom: 75%; /* 4:3 aspect ratio placeholder */
-  background: #fff;
+  background: var(--color-placeholder);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -788,7 +788,7 @@
   font-family: 'Inter', sans-serif;
   font-size: clamp(32px, 5vw, 64px);
   font-weight: 800;
-  color: rgba(0, 0, 0, 0.08);
+  color: var(--color-placeholder-text);
   line-height: 1;
 }
 
@@ -810,12 +810,12 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 24px;
-  color: rgba(0, 0, 0, 0.3);
+  color: color-mix(in srgb, var(--color-text) 30%, transparent);
   transition: color 0.2s ease;
 }
 
 .progressive-image-wrapper.error:hover .image-error-placeholder span {
-  color: rgba(0, 0, 0, 0.6);
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
 }
 
 @keyframes shimmer {
@@ -874,7 +874,7 @@
   left: 0;
   width: 100%;
   padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  background: #fff;
+  background: var(--color-placeholder);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -890,7 +890,7 @@
   font-family: 'Inter', sans-serif;
   font-size: clamp(32px, 5vw, 64px);
   font-weight: 800;
-  color: rgba(0, 0, 0, 0.08);
+  color: var(--color-placeholder-text);
   line-height: 1;
 }
 
@@ -912,12 +912,12 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 24px;
-  color: rgba(0, 0, 0, 0.3);
+  color: color-mix(in srgb, var(--color-text) 30%, transparent);
   transition: color 0.2s ease;
 }
 
 .video-error-placeholder:hover span {
-  color: rgba(0, 0, 0, 0.6);
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
 }
 
 @media (max-width: 768px) {

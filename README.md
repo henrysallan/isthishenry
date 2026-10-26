@@ -1,8 +1,8 @@
 # isthishenry Portfolio
 
 Henry Allan's design portfolio: a single-page React app with a canvas-drawn
-menu, case-study pages, a site search with AI answers, and a password-protected
-editor at `/crm` for laying out pages.
+menu, case-study pages, a site search with AI answers, light and dark themes,
+and a password-protected editor at `/crm` for laying out pages.
 
 ## Tech Stack
 
@@ -71,7 +71,7 @@ npm run preview
 
 ```bash
 npm run lint   # ESLint
-npm test       # Vitest (routing + navigation store)
+npm test       # Vitest (routing, navigation and theme stores, editor layout)
 ```
 
 ## Deployment (Vercel)
@@ -148,6 +148,21 @@ All of these are server-only (see `.env.example`). For `npm run dev`, put them
 in `.env.local`; without the Supabase pair, the dev server saves revisions to
 `.crm-local/revisions.json` instead, so the editor works offline.
 
+## Light and dark themes
+
+Every color on the site is a CSS variable in `src/index.css`: the light set on
+`:root`, the dark set under `:root[data-theme='dark']`. Use those variables
+(e.g. `var(--color-panel)`) rather than hex values in component styles. The menu
+canvas reads them too (`readCanvasColors` in `P5Menu_canvas.jsx`), so keep the
+ones it reads as `#rrggbb`.
+
+The site follows the visitor's system setting until they press the toggle beside
+the search bar; their pick is saved in `localStorage` (`theme`), and picking the
+system's own theme goes back to following it. A script in `index.html` sets
+`data-theme` before the first paint so there's no flash, and
+`src/store/themeStore.js` takes over from there (cross-tab sync, system changes,
+the browser bar's `theme-color`). The editor at `/crm` always stays light.
+
 ## Cloudflare R2 Setup
 
 Cloudflare R2 is configured for video streaming. You'll need to:
@@ -160,13 +175,14 @@ Cloudflare R2 is configured for video streaming. You'll need to:
 
 ```
 ├── src/
-│   ├── App.jsx              # Composes the screen layers, applies theme CSS vars
+│   ├── App.jsx              # Composes the screen layers
 │   ├── components/          # Menu canvas, content area, site search, cursor, players
 │   ├── crm/                 # The /crm site editor (own chunk; visitors never load it)
 │   ├── data/                # Site document helpers; navigation.js is the fallback snapshot
-│   ├── store/               # Zustand navigation store (+ tests)
+│   ├── store/               # Zustand navigation and light/dark theme stores (+ tests)
 │   ├── utils/               # URL sync (+ tests), asset preloader, R2 helpers
-│   └── config/              # Color themes, R2 env config
+│   ├── index.css            # Fonts and every color, light and dark
+│   └── config/              # Layout constants, R2 env config
 ├── api/                     # Vercel Functions: site content, editor API, AI answers
 ├── supabase/schema.sql      # The table the site's content lives in
 ├── public/                  # Fonts, favicon, link-preview image

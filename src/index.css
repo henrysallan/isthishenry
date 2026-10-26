@@ -29,14 +29,92 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2190-21FF, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ── Colors ──
+   Every color on the site, light by default and dark under
+   <html data-theme="dark">. index.html sets data-theme before the first paint
+   and store/themeStore.js switches it; the editor at /crm stays light. The menu
+   canvas reads the background, text, dot, wire and panel-item-active colors
+   (P5Menu_canvas.jsx), so keep those as #rrggbb. */
+:root {
+  color-scheme: light;
+
+  --color-background: #f1f1f1;
+  --color-content-area: #f1f1f1;
+  --color-border: #666666;
+  --color-text: #333333;
+  --color-text-light: #b2b2b2;
+  --color-wire: #666666;
+  --color-accent: #666666;
+  /* The dot grid in the left column */
+  --color-dot: #333333;
+
+  /* Panels: the nav box, search bar and results, work rows, right-click menu */
+  --color-panel: #e9e6e6;
+  --color-panel-hover: #e2e2e2;
+  /* Options inside a panel (search results, right-click menu items) */
+  --color-panel-item: #e5e5e5;
+  /* Hovered or keyboard-selected option */
+  --color-panel-item-active: #dcdcdc;
+  /* Floating panels over the page */
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  /* Media still loading */
+  --color-placeholder: #ffffff;
+  --color-placeholder-text: rgba(0, 0, 0, 0.08);
+
+  --color-scrollbar: #b2b2b2;
+  --color-scrollbar-hover: #999999;
+}
+
+/* Lighter surfaces sit higher, so panels and highlights step up from the page
+   where the light theme steps down */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-background: #141414;
+  --color-content-area: #141414;
+  --color-border: #4d4b4b;
+  --color-text: #e4e2e2;
+  --color-text-light: #6b6969;
+  --color-wire: #8f8d8d;
+  --color-accent: #8f8d8d;
+  --color-dot: #c9c7c7;
+
+  --color-panel: #201e1e;
+  --color-panel-hover: #292727;
+  --color-panel-item: #262424;
+  --color-panel-item-active: #322f2f;
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.5);
+
+  --color-placeholder: #1c1b1b;
+  --color-placeholder-text: rgba(255, 255, 255, 0.08);
+
+  --color-scrollbar: #3b3939;
+  --color-scrollbar-hover: #504d4d;
+}
+
+/* Switching themes changes every color at once: hover fades and the like would
+   otherwise trail behind (store/themeStore.js adds this for the switch) */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
+/* The toggle cross-fades the whole page between themes where the browser can */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+}
+
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light;
-  color: #213547;
-  background-color: #f8f8f8;
+  color: var(--color-text);
+  background-color: var(--color-background);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
